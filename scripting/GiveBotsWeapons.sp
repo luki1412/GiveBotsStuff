@@ -1525,6 +1525,15 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 			}
 			SetEntData(weapon, FindSendPropInfo(entclass, "m_nChargeResistType"), resistType);
 		}
+		case 1178:
+		{
+			int iAmmoType = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+
+			if (iAmmoType != -1) 
+			{
+				SetEntProp(client, Prop_Data, "m_iAmmo", 40, _, iAmmoType);
+			}
+		}
 	}
 	
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
