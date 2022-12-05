@@ -4,11 +4,12 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.33"
+#define PLUGIN_VERSION "1.35"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
 bool g_bLateLoad;
+int g_iResourceEntity;
 ConVar g_hCVTimer;
 ConVar g_hCVEnabled;
 ConVar g_hCVTeam;
@@ -94,12 +95,14 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 		HookEvent("post_inventory_application", player_inv);
 		HookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		HookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
+		HookEvent("player_hurt", player_hurt);
 	}
 	else
 	{
 		UnhookEvent("post_inventory_application", player_inv);
 		UnhookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		UnhookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
+		UnhookEvent("player_hurt", player_hurt);
 	}
 }
 
@@ -109,11 +112,151 @@ public void OnMapStart()
 	{
 		g_bMVM = true;
 	}
+
+	g_iResourceEntity = GetPlayerResourceEntity();
 }
 
 public void OnClientDisconnect(int client)
 {
 	delete g_hTouched[client];
+}
+
+public void player_hurt(Handle event, const char[] name, bool dontBroadcast) 
+{
+	if (!GetConVarBool(g_hCVEnabled))
+	{
+		return;
+	}
+
+	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
+
+	if (IsPlayerHere(victim))
+	{
+		TFClassType class = TF2_GetPlayerClass(victim);
+
+		switch (class) 
+		{
+			case TFClass_Pyro:
+			{
+				int wep = GetPlayerWeaponSlot(victim, 0);
+				int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+				int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+
+				if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wepIndex == 594 && wep == actwep) 
+				{
+					FakeClientCommand(victim, "taunt");
+				}
+			}
+			case TFClass_Engineer:
+			{
+				int wep = GetPlayerWeaponSlot(victim, 2);
+				int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+				int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+				if (GetClientHealth(victim) < 60 && wepIndex == 589 && wep == actwep) 
+				{
+					FakeClientCommand(victim, "eureka_teleport 0");
+				}
+			}
+		}
+	}
+	
+	return;
+}
+
+public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2])
+{
+	if (!GetConVarBool(g_hCVEnabled))
+	{
+		return Plugin_Continue;
+	}
+	
+	if (IsPlayerHere(victim) && IsPlayerAlive(victim))
+	{
+		TFClassType class = TF2_GetPlayerClass(victim);
+
+		if(buttons&IN_ATTACK)
+		{
+			switch (class) 
+			{
+				case TFClass_Scout:
+				{
+					int wep = GetPlayerWeaponSlot(victim, 0);
+					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+
+					if (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") > 99.9 && wepIndex == 448 && wep == actwep) 
+					{
+						buttons ^= IN_ATTACK;
+						buttons |= IN_ATTACK2;
+						return Plugin_Changed;
+					}
+				}
+				case TFClass_Sniper:
+				{
+					int wep = GetPlayerWeaponSlot(victim, 0);
+					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+
+					if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wepIndex == 752 && wep == actwep) 
+					{
+						buttons ^= IN_ATTACK;
+						buttons |= IN_RELOAD;
+						return Plugin_Changed;
+					}
+
+					int wep2 = GetPlayerWeaponSlot(victim, 1);
+					int wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
+
+					if (wepIndex2 == 751 && wep2 == actwep && GetRandomUInt(1,3) == 1) 
+					{
+						buttons |= IN_ATTACK2;
+						return Plugin_Changed;
+					}
+				}
+				case TFClass_Soldier:
+				{
+					int wep = GetPlayerWeaponSlot(victim, 0);
+					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+					if (GetEntPropFloat(wep, Prop_Send, "m_flEnergy") > 19.9 && wepIndex == 441 && wep == actwep && GetRandomUInt(1,2) == 1) 
+					{
+						buttons ^= IN_ATTACK;
+						buttons |= IN_ATTACK2;
+						return Plugin_Changed;
+					}
+				}
+				case TFClass_DemoMan:
+				{
+					int wep = GetPlayerWeaponSlot(victim, 0);
+					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+					if (wepIndex == 996 && wep == actwep && GetRandomUInt(1,10) == 1) 
+					{
+						buttons ^= IN_ATTACK;
+						return Plugin_Changed;
+					}
+				}
+				case TFClass_Engineer:
+				{
+					int wep = GetPlayerWeaponSlot(victim, 1);
+					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+					if (wepIndex == 528 && wep == actwep && GetRandomUInt(1,3) == 1) 
+					{
+						buttons ^= IN_ATTACK;
+						buttons |= IN_ATTACK2;
+						return Plugin_Changed;
+					}	
+				}
+			}
+		}
+	}
+	
+	return Plugin_Continue;
 }
 
 public void player_inv(Handle event, const char[] ename, bool dontBroadcast) 
@@ -487,13 +630,17 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 				}
 				case TFClass_DemoMan:
 				{
-					int rnd = GetRandomUInt(0,1);
+					int rnd = GetRandomUInt(0,2);
 
 					switch (rnd)
 					{
 						case 1:
 						{
 							CreateWeapon(client, "tf_weapon_grenadelauncher", 0, 1151);
+						}
+						case 2:
+						{
+							CreateWeapon(client, "tf_weapon_cannon", 0, 996, 10);
 						}
 					}
 					
@@ -954,7 +1101,17 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}					
 					}
 					
-					int rnd3 = GetRandomUInt(0,4);
+					int rnd2 = GetRandomUInt(0,1);
+
+					switch (rnd2)
+					{
+						case 1:
+						{
+							CreateWeapon(client, "tf_weapon_mechanical_arm", 1, 528, 5);
+						}
+					}
+
+					int rnd3 = GetRandomUInt(0,5);
 
 					switch (rnd3)
 					{
@@ -973,7 +1130,11 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 4:
 						{
 							CreateWeapon(client, "tf_weapon_robot_arm", 2, 142, 15);
-						}						
+						}
+						case 5:
+						{
+							CreateWeapon(client, "tf_weapon_wrench", 2, 589, 20);
+						}
 					}	
 				}
 			}
@@ -1507,6 +1668,15 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 	{
 		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomUInt(1,99));
 	}
+	
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
+
+	if (!DispatchSpawn(weapon)) 
+	{
+		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to spawn! Skipping.", classname, itemindex, weapon);
+		AcceptEntityInput(weapon, "Kill");
+		return false;
+	}
 
 	switch (itemindex)
 	{
@@ -1520,29 +1690,19 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 		case 998:
 		{
 			int resistType = GetRandomUInt(0,4);
+
 			if(resistType > 2) {
 				resistType = 0;
 			}
+
 			SetEntData(weapon, FindSendPropInfo(entclass, "m_nChargeResistType"), resistType);
 		}
 		case 1178:
 		{
-			int iAmmoType = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
-
-			if (iAmmoType != -1) 
-			{
-				SetEntProp(client, Prop_Data, "m_iAmmo", 40, _, iAmmoType);
-			}
+			int iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
+			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
+			SetEntData(client, iAmmoTable+iOffset, 40, 4);
 		}
-	}
-	
-	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
-
-	if (!DispatchSpawn(weapon)) 
-	{
-		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to spawn! Skipping.", classname, itemindex, weapon);
-		AcceptEntityInput(weapon, "Kill");
-		return false;
 	}
 
 	if (slot > -1) {
@@ -1586,19 +1746,17 @@ int GetPlayerMaxHp(int client)
 		return -1;
 	}
 
-	int entity = GetPlayerResourceEntity();
-
-	if (entity == -1)
+	if (g_iResourceEntity == -1)
 	{
 		return -1;
 	}
 
-	return GetEntProp(entity, Prop_Send, "m_iMaxHealth", _, client);
+	return GetEntProp(g_iResourceEntity, Prop_Send, "m_iMaxHealth", _, client);
 }
 
 bool IsPlayerHere(int client)
 {
-	return (client && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
+	return (client && IsClientConnected(client) && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
 }
 
 int GetRandomUInt(int min, int max)
