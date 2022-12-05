@@ -7,16 +7,16 @@
 		{
 			"WeaponEquip"
 			{
-				"windows"	"268"
-				"linux"		"269"
-				"mac"		"269"
+				"windows"	"271"
+				"linux"		"272"
+				"mac"		"272"
 			}
 			
 			"EquipWearable"
 			{
-				"windows"	"435"
-				"linux"		"436"
-				"mac"		"436"
+				"windows"	"438"
+				"linux"		"439"
+				"mac"		"439"
 			}
 		}
 	}
