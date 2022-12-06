@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.35"
+#define PLUGIN_VERSION "1.36"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -132,28 +132,39 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 
 	if (IsPlayerHere(victim))
 	{
-		TFClassType class = TF2_GetPlayerClass(victim);
+		int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+		int wep = GetPlayerWeaponSlot(victim, 0);
+		int wepIndex;
 
-		switch (class) 
+		if (IsValidEntity(wep))
 		{
-			case TFClass_Pyro:
-			{
-				int wep = GetPlayerWeaponSlot(victim, 0);
-				int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-				int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+			wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+		}
 
-				if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wepIndex == 594 && wep == actwep) 
+		int wep3 = GetPlayerWeaponSlot(victim, 2);
+		int wepIndex3;
+
+		if (IsValidEntity(wep3))
+		{
+			wepIndex3 = GetEntProp(wep3, Prop_Send, "m_iItemDefinitionIndex");
+		}
+
+		switch (wepIndex) 
+		{
+			case 594:
+			{
+				if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wep == actwep) 
 				{
 					FakeClientCommand(victim, "taunt");
 				}
 			}
-			case TFClass_Engineer:
-			{
-				int wep = GetPlayerWeaponSlot(victim, 2);
-				int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
-				int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+		}
 
-				if (GetClientHealth(victim) < 60 && wepIndex == 589 && wep == actwep) 
+		switch (wepIndex3) 
+		{
+			case 589:
+			{
+				if (GetClientHealth(victim) < 60 && wep3 == actwep) 
 				{
 					FakeClientCommand(victim, "eureka_teleport 0");
 				}
@@ -173,79 +184,79 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 	
 	if (IsPlayerHere(victim) && IsPlayerAlive(victim))
 	{
-		TFClassType class = TF2_GetPlayerClass(victim);
-
 		if(buttons&IN_ATTACK)
 		{
-			switch (class) 
-			{
-				case TFClass_Scout:
-				{
-					int wep = GetPlayerWeaponSlot(victim, 0);
-					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+			int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+			int wep = GetPlayerWeaponSlot(victim, 0);
+			int wepIndex;
 
-					if (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") > 99.9 && wepIndex == 448 && wep == actwep) 
+			if (IsValidEntity(wep))
+			{
+				wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
+			}
+
+			int wep2 = GetPlayerWeaponSlot(victim, 1);
+			int wepIndex2;
+
+			if (IsValidEntity(wep2))
+			{
+				wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
+			}
+
+			switch (wepIndex) 
+			{
+				case 448:
+				{
+					if (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") > 99.9 && wep == actwep) 
 					{
 						buttons ^= IN_ATTACK;
 						buttons |= IN_ATTACK2;
 						return Plugin_Changed;
 					}
 				}
-				case TFClass_Sniper:
+				case 752:
 				{
-					int wep = GetPlayerWeaponSlot(victim, 0);
-					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
 
-					if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wepIndex == 752 && wep == actwep) 
+					if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wep == actwep) 
 					{
 						buttons ^= IN_ATTACK;
 						buttons |= IN_RELOAD;
 						return Plugin_Changed;
 					}
-
-					int wep2 = GetPlayerWeaponSlot(victim, 1);
-					int wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
-
-					if (wepIndex2 == 751 && wep2 == actwep && GetRandomUInt(1,3) == 1) 
-					{
-						buttons |= IN_ATTACK2;
-						return Plugin_Changed;
-					}
 				}
-				case TFClass_Soldier:
+				case 441:
 				{
-					int wep = GetPlayerWeaponSlot(victim, 0);
-					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
-					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-
-					if (GetEntPropFloat(wep, Prop_Send, "m_flEnergy") > 19.9 && wepIndex == 441 && wep == actwep && GetRandomUInt(1,2) == 1) 
+					if (GetEntPropFloat(wep, Prop_Send, "m_flEnergy") > 19.9 && wep == actwep && GetRandomUInt(1,2) == 1) 
 					{
 						buttons ^= IN_ATTACK;
 						buttons |= IN_ATTACK2;
 						return Plugin_Changed;
 					}
 				}
-				case TFClass_DemoMan:
+				case 996:
 				{
-					int wep = GetPlayerWeaponSlot(victim, 0);
-					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
-					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-
-					if (wepIndex == 996 && wep == actwep && GetRandomUInt(1,10) == 1) 
+					if (wep == actwep && GetRandomUInt(1,10) == 1) 
 					{
 						buttons ^= IN_ATTACK;
 						return Plugin_Changed;
 					}
 				}
-				case TFClass_Engineer:
-				{
-					int wep = GetPlayerWeaponSlot(victim, 1);
-					int wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
-					int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
 
-					if (wepIndex == 528 && wep == actwep && GetRandomUInt(1,3) == 1) 
+			}
+
+			switch (wepIndex2) 
+			{
+				case 751:
+				{
+					if (wep2 == actwep && GetRandomUInt(1,3) == 1) 
+					{
+						buttons |= IN_ATTACK2;
+						return Plugin_Changed;
+					}
+				}
+				case 528:
+				{
+					if (wep2 == actwep && GetRandomUInt(1,3) == 1) 
 					{
 						buttons ^= IN_ATTACK;
 						buttons |= IN_ATTACK2;
@@ -398,7 +409,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,12);
+					int rnd3 = GetRandomUInt(0,13);
 
 					switch (rnd3)
 					{
@@ -449,6 +460,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 12:
 						{
 							CreateWeapon(client, "tf_weapon_bat", 2, 474, 25);
+						}
+						case 13:
+						{
+							CreateWeapon(client, "tf_weapon_bat", 2, 1123, 50);
 						}
 					}
 				}
@@ -502,7 +517,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,7);
+					int rnd3 = GetRandomUInt(0,8);
 
 					switch (rnd3)
 					{
@@ -533,6 +548,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 7:
 						{
 							CreateWeapon(client, "tf_weapon_club", 2, 474, 25);
+						}
+						case 8:
+						{
+							CreateWeapon(client, "tf_weapon_club", 2, 1123, 50);
 						}
 					}			
 				}
@@ -586,7 +605,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,9);
+					int rnd3 = GetRandomUInt(0,10);
 
 					switch (rnd3)
 					{
@@ -626,6 +645,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_shovel", 2, 474, 25);
 						}
+						case 10:
+						{
+							CreateWeapon(client, "tf_weapon_shovel", 2, 1123, 50);
+						}
 					}
 				}
 				case TFClass_DemoMan:
@@ -654,7 +677,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,12);
+					int rnd3 = GetRandomUInt(0,13);
 
 					switch (rnd3)
 					{
@@ -706,6 +729,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_bottle", 2, 474, 25);
 						}
+						case 13:
+						{
+							CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50);
+						}
 					}				
 				}
 				case TFClass_Medic:
@@ -746,7 +773,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,8);
+					int rnd3 = GetRandomUInt(0,9);
 
 					switch (rnd3)
 					{
@@ -781,6 +808,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 8:
 						{
 							CreateWeapon(client, "tf_weapon_bonesaw", 2, 474, 25);
+						}
+						case 9:
+						{
+							CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50);
 						}
 					}			
 				}
@@ -822,7 +853,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}						
 					}
 					
-					int rnd3 = GetRandomUInt(0,11);
+					int rnd3 = GetRandomUInt(0,12);
 
 					switch (rnd3)
 					{
@@ -869,6 +900,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 11:
 						{
 							CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
+						}
+						case 12:
+						{
+							CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
 						}
 					}						
 				}
@@ -934,7 +969,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,15);
+					int rnd3 = GetRandomUInt(0,16);
 
 					switch (rnd3)
 					{
@@ -997,6 +1032,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 15:
 						{
 							CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
+						}
+						case 16:
+						{
+							CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
 						}
 					}			
 				}
@@ -1145,7 +1184,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 			{
 				case TFClass_Scout:
 				{
-					int rnd3 = GetRandomUInt(0,12);
+					int rnd3 = GetRandomUInt(0,13);
 
 					switch (rnd3)
 					{
@@ -1197,6 +1236,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_bat", 2, 474, 25);
 						}
+						case 13:
+						{
+							CreateWeapon(client, "tf_weapon_bat", 2, 1123, 50);
+						}
 					}
 				}
 				case TFClass_Sniper:
@@ -1219,7 +1262,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,7);
+					int rnd3 = GetRandomUInt(0,8);
 
 					switch (rnd3)
 					{
@@ -1251,6 +1294,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_club", 2, 474, 25);
 						}
+						case 8:
+						{
+							CreateWeapon(client, "tf_weapon_club", 2, 1123, 50);
+						}
 					}			
 				}
 				case TFClass_Soldier:
@@ -1269,7 +1316,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}
 					
-					int rnd3 = GetRandomUInt(0,9);
+					int rnd3 = GetRandomUInt(0,10);
 
 					switch (rnd3)
 					{
@@ -1309,6 +1356,10 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_shovel", 2, 474, 25);
 						}
+						case 10:
+						{
+							CreateWeapon(client, "tf_weapon_shovel", 2, 1123, 50);
+						}
 					}
 				}
 				case TFClass_DemoMan:
@@ -1345,7 +1396,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						}
 					}				
 				
-					int rnd3 = GetRandomUInt(0,13);
+					int rnd3 = GetRandomUInt(0,14);
 
 					switch (rnd3)
 					{
@@ -1401,11 +1452,15 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{						
 							CreateWeapon(client, "tf_weapon_sword", 2, 404);							
 						}
+						case 14:
+						{
+							CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50);
+						}
 					}
 				}
 				case TFClass_Medic:
 				{
-					int rnd3 = GetRandomUInt(0,8);
+					int rnd3 = GetRandomUInt(0,9);
 
 					switch (rnd3)
 					{
@@ -1441,11 +1496,15 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_bonesaw", 2, 474, 25);
 						}
-					}			
+						case 9:
+						{
+							CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50);
+						}
+					}	
 				}
 				case TFClass_Heavy:
 				{
-					int rnd3 = GetRandomUInt(0,11);
+					int rnd3 = GetRandomUInt(0,12);
 
 					switch (rnd3)
 					{
@@ -1493,11 +1552,15 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
 						}
-					}						
+						case 12:
+						{
+							CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
+						}
+					}				
 				}
 				case TFClass_Pyro:
 				{
-					int rnd3 = GetRandomUInt(0,15);
+					int rnd3 = GetRandomUInt(0,16);
 
 					switch (rnd3)
 					{
@@ -1561,7 +1624,11 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						{
 							CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
 						}
-					}			
+						case 16:
+						{
+							CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
+						}
+					}
 				}
 				case TFClass_Spy:
 				{
@@ -1606,7 +1673,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 				}
 				case TFClass_Engineer:
 				{
-					int rnd3 = GetRandomUInt(0,4);
+					int rnd3 = GetRandomUInt(0,5);
 
 					switch (rnd3)
 					{
@@ -1625,7 +1692,11 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 4:
 						{
 							CreateWeapon(client, "tf_weapon_robot_arm", 2, 142, 15);
-						}					
+						}
+						case 5:
+						{
+							CreateWeapon(client, "tf_weapon_wrench", 2, 1123, 50);
+						}				
 					}	
 				}
 			}
