@@ -4,12 +4,13 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.36"
+#define PLUGIN_VERSION "1.37"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
 bool g_bLateLoad;
 int g_iResourceEntity;
+int g_iAttackPressed[MAXPLAYERS+1];
 ConVar g_hCVTimer;
 ConVar g_hCVEnabled;
 ConVar g_hCVTeam;
@@ -184,7 +185,28 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 	
 	if (IsPlayerHere(victim) && IsPlayerAlive(victim))
 	{
-		if(buttons&IN_ATTACK)
+		if (buttons&IN_RELOAD)
+		{
+			int actwepa = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+			int wepa = GetPlayerWeaponSlot(victim, 0);
+			int wepIndexa;
+
+			if (IsValidEntity(wepa))
+			{
+				wepIndexa = GetEntProp(wepa, Prop_Send, "m_iItemDefinitionIndex");
+			}
+
+			if (wepIndexa == 730 && wepa == actwepa)
+			{
+				buttons ^= IN_RELOAD;
+				if (GetEntProp(wepa, Prop_Data, "m_iClip1") < 4) {
+					buttons |= IN_ATTACK;
+				}				
+				return Plugin_Changed;
+			}
+		}
+
+		if (buttons&IN_ATTACK)
 		{
 			int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
 			int wep = GetPlayerWeaponSlot(victim, 0);
@@ -235,13 +257,22 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 				}
 				case 996:
 				{
-					if (wep == actwep && GetRandomUInt(1,10) == 1) 
+					g_iAttackPressed[victim]++;
+					if (wep == actwep && g_iAttackPressed[victim] > 1) 
 					{
 						buttons ^= IN_ATTACK;
+						g_iAttackPressed[victim] = 0;
 						return Plugin_Changed;
 					}
 				}
-
+				case 730:
+				{
+					if (wep == actwep && GetEntProp(wep, Prop_Data, "m_iClip1") > 0) 
+					{
+						buttons ^= IN_ATTACK;
+						return Plugin_Changed;
+					}					
+				}
 			}
 
 			switch (wepIndex2) 
@@ -557,7 +588,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 				}
 				case TFClass_Soldier:
 				{
-					int rnd = GetRandomUInt(0,6);
+					int rnd = GetRandomUInt(0,7);
 
 					switch (rnd)
 					{
@@ -584,7 +615,11 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 						case 6:
 						{
 							CreateWeapon(client, "tf_weapon_rocketlauncher_airstrike", 0, 1104);
-						}						
+						}
+						case 7:
+						{
+							CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 730);
+						}
 					}
 					
 					int rnd2 = GetRandomUInt(0,3);
@@ -1762,7 +1797,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 		{
 			int resistType = GetRandomUInt(0,4);
 
-			if(resistType > 2) {
+			if (resistType > 2) {
 				resistType = 0;
 			}
 
@@ -1827,7 +1862,7 @@ int GetPlayerMaxHp(int client)
 
 bool IsPlayerHere(int client)
 {
-	return (client && IsClientConnected(client) && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
+	return (client && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
 }
 
 int GetRandomUInt(int min, int max)
