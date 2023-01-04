@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.37"
+#define PLUGIN_VERSION "1.38"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -1809,6 +1809,12 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
 			SetEntData(client, iAmmoTable+iOffset, 40, 4);
 		}
+		case 39,351,740:
+		{
+			int iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
+			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
+			SetEntData(client, iAmmoTable+iOffset, 16, 4);			
+		}
 	}
 
 	if (slot > -1) {
@@ -1847,12 +1853,7 @@ public Action TimerHealth(Handle timer, any client)
 
 int GetPlayerMaxHp(int client)
 {
-	if (!IsClientConnected(client))
-	{
-		return -1;
-	}
-
-	if (g_iResourceEntity == -1)
+	if (!IsClientInGame(client) || g_iResourceEntity == -1)
 	{
 		return -1;
 	}
