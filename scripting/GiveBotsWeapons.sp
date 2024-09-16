@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.38"
+#define PLUGIN_VERSION "1.39"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -170,6 +170,13 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 					FakeClientCommand(victim, "eureka_teleport 0");
 				}
 			}
+			case 304:
+			{
+				if (GetClientHealth(victim) < 60 && wep3 == actwep) 
+				{
+					FakeClientCommand(victim, "taunt");
+				}
+			}
 		}
 	}
 	
@@ -223,6 +230,14 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			if (IsValidEntity(wep2))
 			{
 				wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
+			}
+
+			int wep3 = GetPlayerWeaponSlot(victim, 2);
+			int wepIndex3;
+
+			if (IsValidEntity(wep3))
+			{
+				wepIndex3 = GetEntProp(wep3, Prop_Send, "m_iItemDefinitionIndex");
 			}
 
 			switch (wepIndex) 
@@ -293,6 +308,65 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 						buttons |= IN_ATTACK2;
 						return Plugin_Changed;
 					}	
+				}
+				case 998:
+				{
+					g_iAttackPressed[victim]++;
+					if (wep2 == actwep && g_iAttackPressed[victim] > 200) 
+					{
+						buttons |= IN_RELOAD;
+						g_iAttackPressed[victim] = 0;
+						return Plugin_Changed;
+					}	
+				}
+			}
+
+			switch (wepIndex3) 
+			{
+				case 44:
+				{
+					g_iAttackPressed[victim]++;
+					if (wep3 == actwep && g_iAttackPressed[victim] > 20) 
+					{
+						buttons ^= IN_ATTACK;
+						buttons |= IN_ATTACK2;
+						g_iAttackPressed[victim] = 0;
+						return Plugin_Changed;
+					}
+				}
+				case 648:
+				{
+					g_iAttackPressed[victim]++;
+					if (wep3 == actwep && g_iAttackPressed[victim] > 15) 
+					{
+						buttons ^= IN_ATTACK;
+						buttons |= IN_ATTACK2;
+						g_iAttackPressed[victim] = 0;
+						return Plugin_Changed;
+					}	
+				}
+			}
+		} 
+		else if (buttons&IN_FORWARD)
+		{
+			int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+			int wep2 = GetPlayerWeaponSlot(victim, 2);
+			int wepIndex2;
+
+			if (IsValidEntity(wep2))
+			{
+				wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
+			}
+
+			switch (wepIndex2) 
+			{
+				case 447:
+				{
+					if (wep2 == actwep) 
+					{
+						buttons |= IN_ATTACK;
+						return Plugin_Changed;
+					}
 				}
 			}
 		}
