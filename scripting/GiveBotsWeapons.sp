@@ -1,10 +1,11 @@
 #include <sourcemod>
 #include <tf2_stocks>
+#include <sdkhooks>
 
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.39"
+#define PLUGIN_VERSION "1.40"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -15,9 +16,11 @@ ConVar g_hCVTimer;
 ConVar g_hCVEnabled;
 ConVar g_hCVTeam;
 ConVar g_hCVMVMSupport;
+ConVar g_hCVDroppedWeaponRemoval;
 Handle g_hWeaponEquip;
 Handle g_hWWeaponEquip;
 Handle g_hTouched[MAXPLAYERS+1];
+Handle g_hRemoval[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
@@ -47,6 +50,7 @@ public void OnPluginStart()
 	g_hCVTimer = CreateConVar("sm_gbw_delay", "0.1", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
 	g_hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	g_hCVMVMSupport = CreateConVar("sm_gbw_mvm", "0", "Enables/disables giving bots weapons when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Enables/disables removal of weapons dropped by bots from this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
@@ -206,7 +210,8 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			if (wepIndexa == 730 && wepa == actwepa)
 			{
 				buttons ^= IN_RELOAD;
-				if (GetEntProp(wepa, Prop_Data, "m_iClip1") < 4) {
+				if (GetEntProp(wepa, Prop_Data, "m_iClip1") < 4) 
+				{
 					buttons |= IN_ATTACK;
 				}				
 				return Plugin_Changed;
@@ -1825,6 +1830,26 @@ public void EventRoundReset(Handle event, const char[] name, bool dontBroadcast)
 	g_bSuddenDeathMode = false;
 }
 
+public void OnEntityCreated(int entity, const char[] classname)
+{
+	if (GetConVarBool(g_hCVEnabled) && GetConVarBool(g_hCVDroppedWeaponRemoval) && classname[0] == 't' && StrEqual(classname, "tf_dropped_weapon", false))
+	{
+		SDKHook(entity, SDKHook_SpawnPost, OnDroppedWeaponSpawnPost);
+	}
+}
+
+public void OnDroppedWeaponSpawnPost(int entity)
+{
+	char entclass[64];
+	GetEntityNetClass(entity, entclass, sizeof(entclass));
+	int accId = GetEntData(entity, FindSendPropInfo(entclass, "m_iAccountID"));
+
+	if (accId == 1)
+	{
+		AcceptEntityInput(entity, "Kill");
+	}
+}
+
 bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int level = 0, bool wearable = false)
 {
 	int weapon = CreateEntityByName(classname);
@@ -1839,6 +1864,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 	GetEntityNetClass(weapon, entclass, sizeof(entclass));
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);	 
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_iAccountID"), 1);
 
 	if (level)
 	{
@@ -1891,7 +1917,8 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 		}
 	}
 
-	if (slot > -1) {
+	if (slot > -1) 
+	{
 		TF2_RemoveWeaponSlot(client, slot);
 	}
 
@@ -1904,7 +1931,8 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 		SDKCall(g_hWWeaponEquip, client, weapon);
 	}
 
-	if ((slot > -1) && !wearable && (GetPlayerWeaponSlot(client, slot) != weapon)) {
+	if ((slot > -1) && !wearable && (GetPlayerWeaponSlot(client, slot) != weapon)) 
+	{
 		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to equip! This is probably caused by invalid gamedata.", classname, itemindex, weapon);
 		AcceptEntityInput(weapon, "Kill");
 		return false;
