@@ -20,7 +20,6 @@ ConVar g_hCVDroppedWeaponRemoval;
 Handle g_hWeaponEquip;
 Handle g_hWWeaponEquip;
 Handle g_hTouched[MAXPLAYERS+1];
-Handle g_hRemoval[MAXPLAYERS+1];
 
 public Plugin myinfo = 
 {
