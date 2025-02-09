@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.33"
+#define PLUGIN_VERSION "1.39"
 
 bool g_bMVM;
 bool g_bLateLoad;
@@ -102,7 +102,7 @@ public void OnClientDisconnect(int client)
 
 public void player_inv(Handle event, const char[] name, bool dontBroadcast) 
 {
-	if (!GetConVarInt(g_hCVEnabled))
+	if (!GetConVarInt(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
 	{
 		return;
 	}
@@ -111,49 +111,51 @@ public void player_inv(Handle event, const char[] name, bool dontBroadcast)
 	int client = GetClientOfUserId(userd);
 	delete g_hTouched[client];
 
-	if ((!g_bMVM || (g_bMVM && GetConVarBool(g_hCVMVMSupport))) && IsPlayerHere(client))
+	if (!IsPlayerHere(client))
 	{
-		int team = GetClientTeam(client);
-		int team2 = GetConVarInt(g_hCVTeam);
-		float timer = GetConVarFloat(g_hCVTimer);
-		
-		switch (team2)
+		return;
+	}
+
+	int team = GetClientTeam(client);
+	int team2 = GetConVarInt(g_hCVTeam);
+	float timer = GetConVarFloat(g_hCVTimer);
+	
+	switch (team2)
+	{
+		case 1:
 		{
-			case 1:
+			g_hTouched[client] = CreateTimer(timer, Timer_GiveCosmetic, userd, TIMER_FLAG_NO_MAPCHANGE);
+		}
+		case 2:
+		{
+			if (team == 2)
 			{
-				g_hTouched[client] = CreateTimer(timer, Timer_GiveHat, userd, TIMER_FLAG_NO_MAPCHANGE);
+				g_hTouched[client] = CreateTimer(timer, Timer_GiveCosmetic, userd, TIMER_FLAG_NO_MAPCHANGE);
 			}
-			case 2:
+		}
+		case 3:
+		{
+			if (team == 3)
 			{
-				if (team == 2)
-				{
-					g_hTouched[client] = CreateTimer(timer, Timer_GiveHat, userd, TIMER_FLAG_NO_MAPCHANGE);
-				}
-			}
-			case 3:
-			{
-				if (team == 3)
-				{
-					g_hTouched[client] = CreateTimer(timer, Timer_GiveHat, userd, TIMER_FLAG_NO_MAPCHANGE);
-				}
+				g_hTouched[client] = CreateTimer(timer, Timer_GiveCosmetic, userd, TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
 }
 
-public Action Timer_GiveHat(Handle timer, any data)
+public Action Timer_GiveCosmetic(Handle timer, any data)
 {
 	int client = GetClientOfUserId(data);
 	g_hTouched[client] = null;
 	
-	if (!GetConVarInt(g_hCVEnabled) || !IsPlayerHere(client))
+	if (!GetConVarInt(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !IsPlayerHere(client))
 	{
 		return Plugin_Stop;
 	}
 
 	int team = GetClientTeam(client);
 	int team2 = GetConVarInt(g_hCVTeam);
-	
+
 	switch (team2)
 	{
 		case 2:
@@ -172,357 +174,1326 @@ public Action Timer_GiveHat(Handle timer, any data)
 		}
 	}
 	
-	if (!g_bMVM || (g_bMVM && GetConVarBool(g_hCVMVMSupport)))
+	TFClassType class = TF2_GetPlayerClass(client);
+	bool faceCovered = false;
+	faceCovered = GetRandomUInt(0,1) == 0 ? SelectAllClassHat(client) : SelectClassHat(client, class);
+
+	if (!faceCovered)
 	{
-		bool face = false;
-	
-		int rnd = GetRandomUInt(0,45);
-		switch (rnd)
-		{
-			case 1:
-			{
-				CreateHat(client, 940, 6, 10); //Ghostly Gibus
-			}
-			case 2:
-			{
-				CreateHat(client, 668, 6); //The Full Head of Steam
-			}
-			case 3:
-			{
-				CreateHat(client, 774, 6); //The Gentle Munitionne of Leisure
-			}
-			case 4:
-			{
-				CreateHat(client, 941, 6, 31); //The Skull Island Topper
-			}
-			case 5:
-			{
-				CreateHat(client, 30357, 6); //Dark Falkirk Helm
-			}
-			case 6:
-			{
-				CreateHat(client, 538, 6); //Killer Exclusive
-			}	
-			case 7:
-			{
-				CreateHat(client, 139, 6); //Modest Pile of Hat
-			}
-			case 8:
-			{
-				CreateHat(client, 137, 6); //Noble Amassment of Hats
-			}
-			case 9:
-			{
-				CreateHat(client, 135, 6); //Towering Pillar of Hats
-			}	
-			case 10:
-			{
-				CreateHat(client, 30119, 6); //The Federal Casemaker
-			}
-			case 11:
-			{
-				CreateHat(client, 252, 6); //Dr's Dapper Topper
-			}
-			case 12:
-			{
-				CreateHat(client, 341, 6); //A Rather Festive Tree
-			}
-			case 13:
-			{
-				CreateHat(client, 523, 6, 10); //The Sarif Cap
-			}
-			case 14:
-			{
-				CreateHat(client, 614, 6); //The Hot Dogger
-			}
-			case 15:
-			{
-				CreateHat(client, 611, 6); //The Salty Dog
-			}
-			case 16:
-			{
-				CreateHat(client, 671, 6); //The Brown Bomber
-			}
-			case 17:
-			{
-				CreateHat(client, 817, 6); //The Human Cannonball
-			}
-			case 18:
-			{
-				CreateHat(client, 993, 6); //Antlers
-			}
-			case 19:
-			{
-				CreateHat(client, 984, 6); //Tough Stuff Muffs
-			}
-			case 20:
-			{
-				CreateHat(client, 1014, 6); //The Brutal Bouffant
-			}
-			case 21:
-			{
-				CreateHat(client, 30066, 6); //The Brotherhood of Arms
-			}	
-			case 22:
-			{
-				CreateHat(client, 30067, 6); //The Well-Rounded Rifleman
-			}
-			case 23:
-			{
-				CreateHat(client, 30175, 6); //The Cotton Head
-			}
-			case 24:
-			{
-				CreateHat(client, 30177, 6); //Hong Kong Cone
-			}
-			case 25:
-			{
-				CreateHat(client, 30313, 6); //The Kiss King
-			}
-			case 26:
-			{
-				CreateHat(client, 30307, 6); //Neckwear Headwear
-			}
-			case 27:
-			{
-				CreateHat(client, 30329, 6); //The Polar Pullover
-			}
-			case 28:
-			{
-				CreateHat(client, 30362, 6); //The Law
-			}
-			case 29:
-			{
-				CreateHat(client, 30567, 6); //The Crown of the Old Kingdom
-			}
-			case 30:
-			{
-				CreateHat(client, 1164, 6, 50); //Civilian Grade JACK Hat
-			}
-			case 31:
-			{
-				CreateHat(client, 920, 6); //The Crone's Dome
-			}
-			case 32:
-			{
-				CreateHat(client, 30425, 6); //Tipped Lid
-			}
-			case 33:
-			{
-				CreateHat(client, 30413, 6); //The Merc's Mohawk
-			}
-			case 34:
-			{
-				CreateHat(client, 921, 6); //The Executioner
-				face = true;
-			}
-			case 35:
-			{
-				CreateHat(client, 30422, 6); //Vive La France
-				face = true;
-			}
-			case 36:
-			{
-				CreateHat(client, 291, 6); //Horrific Headsplitter
-			}
-			case 37:
-			{
-				CreateHat(client, 345, 6, 10); //MNC hat
-			}
-			case 38:
-			{
-				CreateHat(client, 785, 6, 10); //Robot Chicken Hat
-			}
-			case 39:
-			{
-				CreateHat(client, 702, 6); //Warsworn Helmet
-				face = true;
-			}
-			case 40:
-			{
-				CreateHat(client, 634, 6); //Point and Shoot
-			}
-			case 41:
-			{
-				CreateHat(client, 942, 6); //Cockfighter
-			}
-			case 42:
-			{
-				CreateHat(client, 944, 6); //That 70s Chapeau
-				face = true;
-			}
-			case 43:
-			{
-				CreateHat(client, 30065, 6); //Hardy Laurel
-			}
-			case 44:
-			{
-				CreateHat(client, 30571, 6); //Brimstone
-			}
-			case 45:
-			{
-				CreateHat(client, 30473, 6); //MK 50
-			}
-		}
-		
-		if (!face)
-		{
-			int rnd2 = GetRandomUInt(0,10);
-			switch (rnd2)
-			{
-				case 1:
-				{
-					CreateHat(client, 30569, 6); //The Tomb Readers
-				}
-				case 2:
-				{
-					CreateHat(client, 744, 6); //Pyrovision Goggles
-				}
-				case 3:
-				{
-					CreateHat(client, 522, 6); //The Deus Specs
-				}
-				case 4:
-				{
-					CreateHat(client, 816, 6); //The Marxman
-				}
-				case 5:
-				{
-					CreateHat(client, 30104, 6); //Graybanns
-				}
-				case 6:
-				{
-					CreateHat(client, 30306, 6); //The Dictator
-				}
-				case 7:
-				{
-					CreateHat(client, 30352, 6); //The Mustachioed Mann
-				}
-				case 8:
-				{
-					CreateHat(client, 30414, 6); //The Eye-Catcher
-				}
-				case 9:
-				{
-					CreateHat(client, 30140, 6); //The Virtual Viewfinder
-				}
-				case 10:
-				{
-					CreateHat(client, 30397, 6); //The Bruiser's Bandanna
-				}				
-			}
-		}
-		
-		int rnd3 = GetRandomUInt(0,25);
-		switch (rnd3)
-		{
-			case 1:
-			{
-				CreateHat(client, 868, 6, 20); //Heroic Companion Badge
-			}
-			case 2:
-			{
-				CreateHat(client, 583, 6, 20); //Bombinomicon
-			}
-			case 3:
-			{
-				CreateHat(client, 586, 6); //Mark of the Saint
-			}
-			case 4:
-			{
-				CreateHat(client, 625, 6, 20); //Clan Pride
-			}
-			case 5:
-			{
-				CreateHat(client, 619, 6, 20); //Flair!
-			}
-			case 6:
-			{
-				CreateHat(client, 1025, 6); //The Fortune Hunter
-			}
-			case 7:
-			{
-				CreateHat(client, 623, 6, 20); //Photo Badge
-			}
-			case 8:
-			{
-				CreateHat(client, 738, 6); //Pet Balloonicorn
-			}
-			case 9:
-			{
-				CreateHat(client, 955, 6); //The Tuxxy
-			}
-			case 10:
-			{
-				CreateHat(client, 995, 6, 20); //Pet Reindoonicorn
-			}
-			case 11:
-			{
-				CreateHat(client, 987, 6); //The Merc's Muffler
-			}
-			case 12:
-			{
-				CreateHat(client, 1096, 6); //The Baronial Badge
-			}
-			case 13:
-			{
-				CreateHat(client, 30607, 6); //The Pocket Raiders
-			}
-			case 14:
-			{
-				CreateHat(client, 30068, 6); //The Breakneck Baggies
-			}
-			case 15:
-			{
-				CreateHat(client, 869, 6); //The Rump-o-Lantern
-			}
-			case 16:
-			{
-				CreateHat(client, 30309, 6); //Dead of Night
-			}
-			case 17:
-			{
-				CreateHat(client, 1024, 6); //Crofts Crest
-			}
-			case 18:
-			{
-				CreateHat(client, 992, 6); //Smissmas Wreath
-			}
-			case 19:
-			{
-				CreateHat(client, 956, 6); //Faerie Solitaire Pin
-			}
-			case 20:
-			{
-				CreateHat(client, 943, 6); //Hitt Mann Badge
-			}
-			case 21:
-			{
-				CreateHat(client, 873, 6, 20); //Whale Bone Charm
-			}
-			case 22:
-			{
-				CreateHat(client, 855, 6); //Vigilant Pin
-			}
-			case 23:
-			{
-				CreateHat(client, 818, 6); //Awesomenauts Badge
-			}
-			case 24:
-			{
-				CreateHat(client, 767, 6); //Atomic Accolade
-			}
-			case 25:
-			{
-				CreateHat(client, 718, 6); //Merc Medal
-			}
-		}
+		GetRandomUInt(0,1) ? SelectAllClassFacialCosmetic(client) : SelectClassFacialCosmetic(client, class);
 	}
 
+	GetRandomUInt(0,1) == 0 ? SelectAllClassBodyCosmetic(client) : SelectClassBodyCosmetic(client, class);
 	return Plugin_Continue;
 }
 
-bool CreateHat(int client, int itemindex, int quality = 6, int level = 0)
+bool SelectAllClassHat(int client)
+{
+	bool face = false;
+	int rnd = GetRandomUInt(0,45);
+
+	switch (rnd)
+	{
+		case 1:
+		{
+			CreateCosmetic(client, 940, 6, 10); //Ghostly Gibus
+		}
+		case 2:
+		{
+			CreateCosmetic(client, 668, 6); //The Full Head of Steam
+		}
+		case 3:
+		{
+			CreateCosmetic(client, 774, 6); //The Gentle Munitionne of Leisure
+		}
+		case 4:
+		{
+			CreateCosmetic(client, 941, 6, 31); //The Skull Island Topper
+		}
+		case 5:
+		{
+			CreateCosmetic(client, 30357, 6); //Dark Falkirk Helm
+		}
+		case 6:
+		{
+			CreateCosmetic(client, 538, 6); //Killer Exclusive
+		}	
+		case 7:
+		{
+			CreateCosmetic(client, 139, 6); //Modest Pile of Hat
+		}
+		case 8:
+		{
+			CreateCosmetic(client, 137, 6); //Noble Amassment of Hats
+		}
+		case 9:
+		{
+			CreateCosmetic(client, 135, 6); //Towering Pillar of Hats
+		}	
+		case 10:
+		{
+			CreateCosmetic(client, 30119, 6); //The Federal Casemaker
+		}
+		case 11:
+		{
+			CreateCosmetic(client, 252, 6); //Dr's Dapper Topper
+		}
+		case 12:
+		{
+			CreateCosmetic(client, 341, 6); //A Rather Festive Tree
+		}
+		case 13:
+		{
+			CreateCosmetic(client, 523, 6, 10); //The Sarif Cap
+		}
+		case 14:
+		{
+			CreateCosmetic(client, 614, 6); //The Hot Dogger
+		}
+		case 15:
+		{
+			CreateCosmetic(client, 611, 6); //The Salty Dog
+		}
+		case 16:
+		{
+			CreateCosmetic(client, 671, 6); //The Brown Bomber
+		}
+		case 17:
+		{
+			CreateCosmetic(client, 817, 6); //The Human Cannonball
+		}
+		case 18:
+		{
+			CreateCosmetic(client, 993, 6); //Antlers
+		}
+		case 19:
+		{
+			CreateCosmetic(client, 984, 6); //Tough Stuff Muffs
+		}
+		case 20:
+		{
+			CreateCosmetic(client, 1014, 6); //The Brutal Bouffant
+		}
+		case 21:
+		{
+			CreateCosmetic(client, 30066, 6); //The Brotherhood of Arms
+		}	
+		case 22:
+		{
+			CreateCosmetic(client, 30067, 6); //The Well-Rounded Rifleman
+		}
+		case 23:
+		{
+			CreateCosmetic(client, 30175, 6); //The Cotton Head
+		}
+		case 24:
+		{
+			CreateCosmetic(client, 30177, 6); //Hong Kong Cone
+		}
+		case 25:
+		{
+			CreateCosmetic(client, 30313, 6); //The Kiss King
+		}
+		case 26:
+		{
+			CreateCosmetic(client, 30307, 6); //Neckwear Headwear
+		}
+		case 27:
+		{
+			CreateCosmetic(client, 30329, 6); //The Polar Pullover
+		}
+		case 28:
+		{
+			CreateCosmetic(client, 30362, 6); //The Law
+		}
+		case 29:
+		{
+			CreateCosmetic(client, 30567, 6); //The Crown of the Old Kingdom
+		}
+		case 30:
+		{
+			CreateCosmetic(client, 1164, 6, 50); //Civilian Grade JACK Hat
+		}
+		case 31:
+		{
+			CreateCosmetic(client, 920, 6); //The Crone's Dome
+		}
+		case 32:
+		{
+			CreateCosmetic(client, 30425, 6); //Tipped Lid
+		}
+		case 33:
+		{
+			CreateCosmetic(client, 30413, 6); //The Merc's Mohawk
+		}
+		case 34:
+		{
+			CreateCosmetic(client, 921, 6); //The Executioner
+			face = true;
+		}
+		case 35:
+		{
+			CreateCosmetic(client, 30422, 6); //Vive La France
+			face = true;
+		}
+		case 36:
+		{
+			CreateCosmetic(client, 291, 6); //Horrific Headsplitter
+		}
+		case 37:
+		{
+			CreateCosmetic(client, 345, 6, 10); //MNC hat
+		}
+		case 38:
+		{
+			CreateCosmetic(client, 785, 6, 10); //Robot Chicken Hat
+		}
+		case 39:
+		{
+			CreateCosmetic(client, 702, 6); //Warsworn Helmet
+			face = true;
+		}
+		case 40:
+		{
+			CreateCosmetic(client, 634, 6); //Point and Shoot
+		}
+		case 41:
+		{
+			CreateCosmetic(client, 942, 6); //Cockfighter
+		}
+		case 42:
+		{
+			CreateCosmetic(client, 944, 6); //That 70s Chapeau
+			face = true;
+		}
+		case 43:
+		{
+			CreateCosmetic(client, 30065, 6); //Hardy Laurel
+		}
+		case 44:
+		{
+			CreateCosmetic(client, 30571, 6); //Brimstone
+		}
+		case 45:
+		{
+			CreateCosmetic(client, 30473, 6); //MK 50
+		}
+	}
+	
+	return face;
+}
+
+bool SelectClassHat(int client, TFClassType class)
+{
+	bool face = false;
+
+	switch (class)
+	{
+		case TFClass_Scout:
+		{
+			int rnd = GetRandomUInt(0,13);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 111, 6); // Baseball Bill's Sports Shine
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 106, 6); // Bonk Helm
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 107, 6); // Ye Olde Baker Boy
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 150, 6); // Scout Beanie
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 174, 6); // Whoopee Cap
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 249, 6); // Bombing Run
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 219, 6); // Milkman
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 324, 6); // Flipped Trilby
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 346, 6, 10, 10); // MNC Mascot Hat
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 453, 6); // Hero's Tail
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 539, 6, 10, 10); // El Jefe
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 617, 6, 10, 10); // Backwards Ballcap
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 633, 6, 10, 10); // Hermes
+				}
+			}
+		}
+		case TFClass_Sniper:
+		{
+			int rnd = GetRandomUInt(0,13);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 110, 6); // Master's Yellow Belt
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 109, 6); // Professional's Panama
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 117, 6); // Ritzy Rick's Hair Fixative
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 158, 6); // Sniper Pith Helmet
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 181, 6); // Sniper Fishing Hat
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 229, 6); // Ol' Snaggletooth
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 314, 6); // Larrikin Robin
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 344, 6); // Crocleather Slouch
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 400, 6); // Desert Marauder
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 518, 6, 10, 10); // Anger
+					face = true;
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 631, 6, 10, 10); // Hat With No Name
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 626, 6, 10, 10); // Swagman's Swatter
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 600, 6, 10, 10); // Your Worst Nightmare
+				}
+			}			
+		}
+		case TFClass_Soldier:
+		{
+			int rnd = GetRandomUInt(0,18);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 98, 6); // Stainless Pot
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 99, 6); // Tyrant's Helm
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 152, 6); // Soldier Samurai Hat
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 183, 6); // Soldier Drill Hat
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 250, 6); // Chieftain's Challenge
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 227, 6); // Grenadier's Softcap
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 251, 6); // Stout Shako
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 340, 6); // Defiant Spartan
+					face = true;
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 339, 6); // Exquisite Rack
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 391, 6); // Honcho's Headgear
+					face = true;
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 434, 6); // Bucket Hat
+					face = true;
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 395, 6); // Furious Fukaamigasa
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 378, 6); // Team Captain
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 445, 6); // Armored Authority
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 417, 6); // Jumper's Jeepcap
+				}
+				case 16:
+				{
+					CreateCosmetic(client, 439, 6); // Lord Cockswain's Pith Helmet
+				}
+				case 17:
+				{
+					CreateCosmetic(client, 516, 6, 10, 10); // Stahlhelm
+				}
+				case 18:
+				{
+					CreateCosmetic(client, 631, 6, 10, 10); // Hat With No Name
+				}
+			}
+		}
+		case TFClass_DemoMan:
+		{
+			int rnd = GetRandomUInt(0,19);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 100, 6); // Glengarry Bonnet
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 120, 6); // Scotsman's Stove Pipe
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 146, 6); // Demoman Hallmark
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 179, 6); // Demoman Tricorne
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 259, 6); // Carouser's Capotain
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 216, 6); // Rimmed Raincatcher
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 255, 6); // Sober Stuntman
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 342, 6); // Prince Tavish's Crown
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 306, 6); // Scotch Bonnet
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 359, 6); // Demo Kabuto
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 388, 6); // Private Eye
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 390, 6); // Reggaelator
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 465, 6); // Conjurer's Cowl
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 403, 6); // Sultan's Ceremonial
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 480, 6); // Tam O' Shanter
+				}
+				case 16:
+				{
+					CreateCosmetic(client, 514, 6, 10, 10); // Mask of the Shaman
+					face = true;
+				}
+				case 17:
+				{
+					CreateCosmetic(client, 607, 6, 10, 10); // Buccaneer's Bicorne
+				}
+				case 18:
+				{
+					CreateCosmetic(client, 604, 6, 10, 10); // Tavish DeGroot Experience
+				}
+				case 19:
+				{
+					CreateCosmetic(client, 631, 6, 10, 10); // Hat With No Name
+				}
+			}			
+		}
+		case TFClass_Medic:
+		{
+			int rnd = GetRandomUInt(0,14);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 104, 6); // Otolaryngologist's Mirror
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 101, 6); // Vintage Tyrolean
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 184, 6); // Medic Gatsby
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 303, 6); // Berliner's Bucket Helm
+					face = true;
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 177, 6); // Medic Goggles
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 323, 6); // German Gonzila
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 363, 6); // Medic Geisha Hair
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 383, 6); // Grimm Hatte
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 381, 6); // Medic's Mountain Cap
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 388, 6); // Private Eye
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 398, 6); // Doctor's Sack
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 378, 6); // Team Captain
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 467, 6); // Planeswalker Helm
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 616, 6, 10, 10); // Surgeon's Stahlhelm
+				}
+			}		
+		}
+		case TFClass_Heavy:
+		{
+			int rnd = GetRandomUInt(0,21);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 96, 6); // Officer's Ushanka
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 97, 6); // Tough Guy's Toque
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 145, 6); // Heavy Hair
+					face = true;
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 185, 6); // Heavy Do-rag
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 254, 6); // Hard Counter
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 246, 6); // Pugilist's Protector
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 290, 6, 31, 31); // Cadaver's Cranium
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 309, 6); // Big Chief
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 330, 6); // Coupe D'isaster
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 313, 6); // Magnificent Mongolian
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 358, 6); // Heavy Topknot
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 380, 6); // Large Luchadore
+					face = true;
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 378, 6); // Team Captain
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 427, 6); // Capone's Capper
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 485, 6); // Big Steel Jaw of Summer Fun
+				}
+				case 16:
+				{
+					CreateCosmetic(client, 478, 6); // Copper's Hard Top
+				}
+				case 17:
+				{
+					CreateCosmetic(client, 515, 6, 10, 10); // Pilotka
+				}
+				case 18:
+				{
+					CreateCosmetic(client, 517, 6, 10, 10); // Dragonborn Helmet
+					face = true;
+				}
+				case 19:
+				{
+					CreateCosmetic(client, 613, 6, 10, 10); // Gym Rat
+				}
+				case 20:
+				{
+					CreateCosmetic(client, 601, 6, 10, 10); // One-Man Army
+				}
+				case 21:
+				{
+					CreateCosmetic(client, 603, 6, 10, 10); // Outdoorsman
+				}
+			}				
+		}
+		case TFClass_Pyro:
+		{
+			int rnd = GetRandomUInt(0,17);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 105, 6); // Brigade Helm
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 102, 6); // Respectless Rubber Glove
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 151, 6); // Pyro Brain Sucker
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 182, 6); // Pyro Helm
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 213, 6); // Attendant
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 253, 6); // Handyman's Handle
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 248, 6); // Napper's Respite
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 247, 6); // Old Guadalajara
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 321, 6); // Madame Dixie
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 318, 6); // Prancer's Pride
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 435, 6); // Traffic Cone
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 394, 6); // Connoisseur's Cap
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 377, 6); // Hottie's Hoodie
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 481, 6); // Stately Steel Toe
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 615, 6, 10, 10); // Birdcage
+				}
+				case 16:
+				{
+					CreateCosmetic(client, 627, 6, 10, 10); // Flamboyant Flamenco
+				}
+				case 17:
+				{
+					CreateCosmetic(client, 934, 6, 20, 20); // Little Buddy
+				}
+			}	
+		}
+		case TFClass_Spy:
+		{
+			int rnd = GetRandomUInt(0,12);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 108, 6); // Backbiter's Billycock
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 147, 6); // Spy Noble Hair
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 180, 6); // Spy Beret
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 223, 6); // Familiar Fez
+					face = true;
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 319, 6); // Détective Noir
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 397, 6); // Charmer's Chapeau
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 388, 6); // Private Eye
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 437, 6); // Janissary Hat
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 459, 6); // Cosa Nostra Cap
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 521, 6, 10, 10); // Belltower Spec Ops
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 602, 6, 10, 10); // Counterfeit Billycock
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 622, 6, 10, 10); // L'Inspecteur
+				}
+			}					
+		}
+		case TFClass_Engineer:
+		{
+			int rnd = GetRandomUInt(0,15);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 95, 6); // Engineer's Cap
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 118, 6); // Texas Slim's Dome Shine
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 94, 6); // Texas Ten Gallon
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 148, 6); // Engineer Welding Mask
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 178, 6); // Engineer Earmuffs
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 322, 6); // Buckaroo's Hat
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 338, 6); // Industrial Festivizer
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 382, 6); // Big Country
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 384, 6); // Professor's Peculiarity
+					face = true;
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 436, 6); // Polish War Babushka
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 399, 6); // Ol' Geezer
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 379, 6); // Western Wear
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 631, 6, 10, 10); // Hat With No Name
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 605, 6, 10, 10); // Pencil Pusher
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 628, 6, 10, 10); // Virtual Reality Headset
+				}
+			}	
+		}
+	}
+	
+	return face;
+}
+
+void SelectAllClassFacialCosmetic(int client)
+{
+	int rnd = GetRandomUInt(0,10);
+
+	switch (rnd)
+	{
+		case 1:
+		{
+			CreateCosmetic(client, 30569, 6); //The Tomb Readers
+		}
+		case 2:
+		{
+			CreateCosmetic(client, 744, 6); //Pyrovision Goggles
+		}
+		case 3:
+		{
+			CreateCosmetic(client, 522, 6); //The Deus Specs
+		}
+		case 4:
+		{
+			CreateCosmetic(client, 816, 6); //The Marxman
+		}
+		case 5:
+		{
+			CreateCosmetic(client, 30104, 6); //Graybanns
+		}
+		case 6:
+		{
+			CreateCosmetic(client, 30306, 6); //The Dictator
+		}
+		case 7:
+		{
+			CreateCosmetic(client, 30352, 6); //The Mustachioed Mann
+		}
+		case 8:
+		{
+			CreateCosmetic(client, 30414, 6); //The Eye-Catcher
+		}
+		case 9:
+		{
+			CreateCosmetic(client, 30140, 6); //The Virtual Viewfinder
+		}
+		case 10:
+		{
+			CreateCosmetic(client, 30397, 6); //The Bruiser's Bandanna
+		}				
+	}
+}
+
+void SelectClassFacialCosmetic(int client, TFClassType class)
+{
+	switch (class)
+	{
+		case TFClass_Scout:
+		{
+			int rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 460, 6); // Scout MtG Hat
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 451, 6); // Bonk Boy
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 630, 6); // Stereoscopic Shades
+				}
+			}
+		}
+		case TFClass_Sniper:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 393, 6); // Villain's Veil
+				}
+			}
+		}
+		case TFClass_Soldier:
+		{
+			int rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 440, 6); // Lord Cockswain's Novelty Mutton Chops and Pipe
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 360, 6); // Hero's Hachimaki
+				}
+			}
+		}
+		case TFClass_DemoMan:
+		{
+			// nothing for now			
+		}
+		case TFClass_Medic:
+		{
+			int rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 315, 6); // Blighted Beak
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 144, 6); // Medic Mask
+				}
+			}		
+		}
+		case TFClass_Heavy:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 479, 6); // Security Shades
+				}
+			}				
+		}
+		case TFClass_Pyro:
+		{
+			int rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 316, 6); // Pyromancer's Mask
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 175, 6); // Pyro Monocle
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 387, 6); // Sight for Sore Eyes
+				}
+			}	
+		}
+		case TFClass_Spy:
+		{
+			int rnd = GetRandomUInt(0,5);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 103, 6); // Camera Beard
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 462, 6); // Made Man
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 629, 6); // Spectre's Spectacles
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 337, 6); // Le Party Phantom
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 361, 6); // Spy Oni Mask
+				}
+			}					
+		}
+		case TFClass_Engineer:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 389, 6); // Googly Gazer
+				}
+			}	
+		}
+	}
+}
+
+void SelectAllClassBodyCosmetic(int client)
+{ 
+	int rnd = GetRandomUInt(0,25);
+
+	switch (rnd)
+	{
+		case 1:
+		{
+			CreateCosmetic(client, 868, 6, 20); //Heroic Companion Badge
+		}
+		case 2:
+		{
+			CreateCosmetic(client, 583, 6, 20); //Bombinomicon
+		}
+		case 3:
+		{
+			CreateCosmetic(client, 586, 6); //Mark of the Saint
+		}
+		case 4:
+		{
+			CreateCosmetic(client, 625, 6, 20); //Clan Pride
+		}
+		case 5:
+		{
+			CreateCosmetic(client, 619, 6, 20); //Flair!
+		}
+		case 6:
+		{
+			CreateCosmetic(client, 1025, 6); //The Fortune Hunter
+		}
+		case 7:
+		{
+			CreateCosmetic(client, 623, 6, 20); //Photo Badge
+		}
+		case 8:
+		{
+			CreateCosmetic(client, 738, 6); //Pet Balloonicorn
+		}
+		case 9:
+		{
+			CreateCosmetic(client, 955, 6); //The Tuxxy
+		}
+		case 10:
+		{
+			CreateCosmetic(client, 995, 6, 20); //Pet Reindoonicorn
+		}
+		case 11:
+		{
+			CreateCosmetic(client, 987, 6); //The Merc's Muffler
+		}
+		case 12:
+		{
+			CreateCosmetic(client, 1096, 6); //The Baronial Badge
+		}
+		case 13:
+		{
+			CreateCosmetic(client, 30607, 6); //The Pocket Raiders
+		}
+		case 14:
+		{
+			CreateCosmetic(client, 30068, 6); //The Breakneck Baggies
+		}
+		case 15:
+		{
+			CreateCosmetic(client, 869, 6); //The Rump-o-Lantern
+		}
+		case 16:
+		{
+			CreateCosmetic(client, 30309, 6); //Dead of Night
+		}
+		case 17:
+		{
+			CreateCosmetic(client, 1024, 6); //Crofts Crest
+		}
+		case 18:
+		{
+			CreateCosmetic(client, 992, 6); //Smissmas Wreath
+		}
+		case 19:
+		{
+			CreateCosmetic(client, 956, 6); //Faerie Solitaire Pin
+		}
+		case 20:
+		{
+			CreateCosmetic(client, 943, 6); //Hitt Mann Badge
+		}
+		case 21:
+		{
+			CreateCosmetic(client, 873, 6, 20); //Whale Bone Charm
+		}
+		case 22:
+		{
+			CreateCosmetic(client, 855, 6); //Vigilant Pin
+		}
+		case 23:
+		{
+			CreateCosmetic(client, 818, 6); //Awesomenauts Badge
+		}
+		case 24:
+		{
+			CreateCosmetic(client, 767, 6); //Atomic Accolade
+		}
+		case 25:
+		{
+			CreateCosmetic(client, 718, 6); //Merc Medal
+		}
+	}
+}
+
+void SelectClassBodyCosmetic(int client, TFClassType class)
+{
+	switch (class)
+	{
+		case TFClass_Scout:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 454, 6, 20, 20); // Sign of the Wolf's School
+				}
+			}
+		}
+		case TFClass_Sniper:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 618, 6, 20, 20); // The Crocodile Smile
+				}
+			}
+		}
+		case TFClass_Soldier:
+		{
+			int rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 392, 6, 15, 15); // Pocket Medic
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 446, 6); // Fancy Dress Uniform
+				}
+			}
+		}
+		case TFClass_DemoMan:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 610, 6, 20, 20); // A Whiff of the Old Brimstone
+				}
+			}			
+		}
+		case TFClass_Medic:
+		{
+			int rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 620, 6, 20, 20); // Couvre Corner
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 621, 6, 20, 20); // Surgeon's Stethoscope
+				}
+			}		
+		}
+		case TFClass_Heavy:
+		{
+			int rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 392, 6, 15, 15); // Pocket Medic
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 524, 6, 10, 10); // The Purity Fist
+				}
+			}				
+		}
+		case TFClass_Pyro:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 632, 6, 15, 15); // Cremator's Conscience
+				}
+			}	
+		}
+		case TFClass_Spy:
+		{
+			int rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 483, 6, 15, 15); // Rogue's Col Roule
+				}
+			}					
+		}
+		case TFClass_Engineer:
+		{
+			int rnd = GetRandomUInt(0,5);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 520, 6, 10, 10); // Wingstick
+				}
+				case 2:
+				{
+					CreateCosmetic(client, 519, 6, 10, 10); // Pip-Boy
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 606, 6, 15, 15); // Builder's Blueprints
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 484, 6, 15, 15); // Prairie Heel Biters
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 386, 6); // Teddy Roosebelt
+				}
+			}	
+		}
+	}
+}
+
+bool CreateCosmetic(int client, int itemindex, int quality = 6, int minlevel = 0, int maxlevel = 0)
 {
 	int hat = CreateEntityByName("tf_wearable");
 	
@@ -537,9 +1508,9 @@ bool CreateHat(int client, int itemindex, int quality = 6, int level = 0)
 	SetEntData(hat, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);
 	SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityQuality"), quality);
 
-	if (level)
+	if (minlevel && maxlevel)
 	{
-		SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
+		SetEntData(hat, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomUInt(minlevel,maxlevel));
 	}
 	else
 	{
