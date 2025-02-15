@@ -5,7 +5,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.40"
+#define PLUGIN_VERSION "1.41"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -158,7 +158,7 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 
 	switch (wepIndex) 
 	{
-		case 594:
+		case 594: // Phlogistinator
 		{
 			if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wep == actwep) 
 			{
@@ -169,21 +169,22 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 
 	switch (wepIndex3) 
 	{
-		case 589:
+		case 589:  // Eureka Effect
 		{
-			if (GetClientHealth(victim) < 60 && wep3 == actwep) 
+			if ((GetClientHealth(victim) < 60) && wep3 == actwep && (GetRandomUInt(1,2) == 1)) 
 			{
 				FakeClientCommand(victim, "eureka_teleport 0");
 			}
 		}
-		case 304:
+		case 304:  // Amputator
 		{
-			if (GetClientHealth(victim) < 60 && wep3 == actwep) 
+			if ((GetClientHealth(victim) < 60) && wep3 == actwep && (GetRandomUInt(1,2) == 1))
 			{
 				FakeClientCommand(victim, "taunt");
 			}
 		}
 	}
+
 	return;
 }
 
@@ -205,7 +206,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			wepIndexa = GetEntProp(wepa, Prop_Send, "m_iItemDefinitionIndex");
 		}
 
-		if (wepIndexa == 730 && wepa == actwepa)
+		if ((wepIndexa == 730) && (wepa == actwepa)) // Beggar's Bazooka
 		{
 			buttons ^= IN_RELOAD;
 
@@ -247,46 +248,46 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 		switch (wepIndex) 
 		{
-			case 448:
+			case 448: // Soda Popper
 			{
-				if (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") > 99.9 && wep == actwep) 
+				if ((GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") > 99.9) && (wep == actwep)) 
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
 			}
-			case 752:
+			case 752: // Hitman's Heatmaker
 			{
-				if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wep == actwep) 
+				if ((GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9) && (wep == actwep)) 
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_RELOAD;
 					return Plugin_Changed;
 				}
 			}
-			case 441:
+			case 441: // Cow Mangler 5000
 			{
-				if (GetEntPropFloat(wep, Prop_Send, "m_flEnergy") > 19.9 && wep == actwep && GetRandomUInt(1,2) == 1) 
+				if ((GetEntPropFloat(wep, Prop_Send, "m_flEnergy") > 19.9) && (wep == actwep) && (GetRandomUInt(1,2) == 1)) 
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
 			}
-			case 996:
+			case 996: // Loose Cannon
 			{
 				g_iAttackPressed[victim]++;
-				if (wep == actwep && g_iAttackPressed[victim] > 1) 
+				if ((wep == actwep) && (g_iAttackPressed[victim] > 1)) 
 				{
 					buttons ^= IN_ATTACK;
 					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
 				}
 			}
-			case 730:
+			case 730: // Beggar's Bazooka
 			{
-				if (wep == actwep && GetEntProp(wep, Prop_Data, "m_iClip1") > 0) 
+				if ((wep == actwep) && (GetEntProp(wep, Prop_Data, "m_iClip1") > 0)) 
 				{
 					buttons ^= IN_ATTACK;
 					return Plugin_Changed;
@@ -296,27 +297,27 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 		switch (wepIndex2) 
 		{
-			case 751:
+			case 751: // Cleaner's Carabine
 			{
-				if (wep2 == actwep && GetRandomUInt(1,3) == 1) 
+				if ((wep2 == actwep) && (GetRandomUInt(1,3) == 1)) 
 				{
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
 			}
-			case 528:
+			case 528: // Short Circuit
 			{
-				if (wep2 == actwep && GetRandomUInt(1,3) == 1) 
+				if ((wep2 == actwep) && (GetRandomUInt(1,3) == 1)) 
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}	
 			}
-			case 998:
+			case 998: // Vaccinator
 			{
 				g_iAttackPressed[victim]++;
-				if (wep2 == actwep && g_iAttackPressed[victim] > 200) 
+				if ((wep2 == actwep) && (g_iAttackPressed[victim] > 200)) 
 				{
 					buttons |= IN_RELOAD;
 					g_iAttackPressed[victim] = 0;
@@ -327,10 +328,10 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 		switch (wepIndex3) 
 		{
-			case 44:
+			case 44:  // Sandman
 			{
 				g_iAttackPressed[victim]++;
-				if (wep3 == actwep && g_iAttackPressed[victim] > 20) 
+				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 20)) 
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -338,10 +339,10 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 					return Plugin_Changed;
 				}
 			}
-			case 648:
+			case 648: // Wrap Assassin
 			{
 				g_iAttackPressed[victim]++;
-				if (wep3 == actwep && g_iAttackPressed[victim] > 15) 
+				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 15)) 
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -364,7 +365,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 		switch (wepIndex2) 
 		{
-			case 447:
+			case 447:  // Disciplinary Action
 			{
 				if (wep2 == actwep) 
 				{
@@ -453,1369 +454,1390 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 	}
 
 	TFClassType class = TF2_GetPlayerClass(client);
-	int rndact = GetRandomUInt(0,3);
-
-	switch (rndact)
-	{
-		case 1:
-		{
-			CreateWeapon(client, "tf_wearable", -1, 241, 5, true);
-		}
-		case 2:
-		{
-			CreateWeapon(client, "tf_powerup_bottle", -1, 489, _, true);
-		}
-		case 3:
-		{
-			CreateWeapon(client, "tf_weapon_spellbook", -1, 1069, 1, false);
-		}
-	}
 
 	if (GameRules_GetProp("m_bPlayingMedieval") != 1)
 	{
-		switch (class)
-		{
-			case TFClass_Scout:
-			{
-				int rnd = GetRandomUInt(0,5);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_scattergun", 0, 45, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_handgun_scout_primary", 0, 220, 1);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_soda_popper", 0, 448, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_pep_brawler_blaster", 0, 772, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_scattergun", 0, 1103);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,2);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_handgun_scout_secondary", 1, 773, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_handgun_scout_secondary", 1, 449, 15);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,13);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_bat_wood", 2, 44, 15);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_bat_fish", 2, 572);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 317, 25);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 349, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 355, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_bat_giftwrap", 2, 648, 15);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 450, 10);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_bat_fish", 2, 221);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 1013, 5);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 939, 5);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 880, 25);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 474, 25);
-					}
-					case 13:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 1123, 50);
-					}
-				}
-			}
-			case TFClass_Sniper:
-			{
-				int rnd = GetRandomUInt(0,8);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_compound_bow", 0, 56, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_sniperrifle", 0, 230, 1);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_sniperrifle_decap", 0, 402, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_sniperrifle", 0, 526, 5);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_sniperrifle", 0, 752, 1);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_sniperrifle_classic", 0, 1098, 1);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_compound_bow", 0, 1092, 10);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_sniperrifle", 0, 851, 1);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,1);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_charged_smg", 1, 751, 1);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,8);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 171, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 232, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 401, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 1013, 5);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 939, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 880, 25);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 474, 25);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 1123, 50);
-					}
-				}			
-			}
-			case TFClass_Soldier:
-			{
-				int rnd = GetRandomUInt(0,7);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher_directhit", 0, 127, 1);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 228, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 414, 25);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_particle_cannon", 0, 441, 30);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 513, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher_airstrike", 0, 1104);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 730);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,3);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_raygun", 1, 442, 30);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_soldier", 1, 1153);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_soldier", 1, 415, 10);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,10);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 128, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 447, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 775, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_katana", 2, 357, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 1013, 5);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 939, 5);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 880, 25);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 474, 25);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 1123, 50);
-					}
-				}
-			}
-			case TFClass_DemoMan:
-			{
-				int rnd = GetRandomUInt(0,2);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_grenadelauncher", 0, 1151);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_cannon", 0, 996, 10);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,1);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_pipebomblauncher", 1, 1150);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,13);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 132, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 172, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_stickbomb", 2, 307, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 327, 10);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_katana", 2, 357, 5);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 482, 5);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 609, 10);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 1013, 5);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 939, 5);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 880, 25);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 474, 25);
-					}
-					case 13:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50);
-					}
-				}				
-			}
-			case TFClass_Medic:
-			{
-				int rnd = GetRandomUInt(0,3);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_syringegun_medic", 0, 36, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_crossbow", 0, 305, 15);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_syringegun_medic", 0, 412, 5);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,3);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_medigun", 1, 35, 8);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_medigun", 1, 411, 8);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_medigun", 1, 998, 8);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,9);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 37, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 173, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 304, 15);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 413, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 1013, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 939, 5);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 880, 25);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 474, 25);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50);
-					}
-				}			
-			}
-			case TFClass_Heavy:
-			{
-				int rnd = GetRandomUInt(0,4);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_minigun", 0, 41, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_minigun", 0, 312, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_minigun", 0, 424, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_minigun", 0, 811);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,2);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_hwg", 1, 425, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_hwg", 1, 1153);
-					}						
-				}
-				
-				int rnd3 = GetRandomUInt(0,12);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 43, 7);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 239, 10);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 310, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 331, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 426, 10);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 656, 10);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 587, 10);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
-					}
-				}						
-			}
-			case TFClass_Pyro:
-			{
-				int rnd = GetRandomUInt(0,6);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_flamethrower", 0, 40, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_flamethrower", 0, 215, 10);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_flamethrower", 0, 594, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_flamethrower", 0, 741, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_rocketlauncher_fireball", 0, 1178);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_flamethrower", 0, 30474, 25);
-					}
-				}
-				
-				int rnd2 = GetRandomUInt(0,6);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_flaregun", 1, 39, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_flaregun", 1, 351, 10);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_flaregun_revenge", 1, 595, 30);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_flaregun", 1, 740, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_pyro", 1, 1153);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_pyro", 1, 415, 10);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,16);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 38, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 153, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 214, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 326, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 348, 10);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 593, 10);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_breakable_sign", 2, 813);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 457, 10);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 739);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_slap", 2, 1181);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 466, 5);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5);
-					}
-					case 13:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5);
-					}
-					case 14:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25);
-					}
-					case 15:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
-					}
-					case 16:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
-					}
-				}			
-			}
-			case TFClass_Spy:
-			{
-				int rnd = GetRandomUInt(0,4);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_revolver", 0, 61, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_revolver", 0, 224, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_revolver", 0, 460, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_revolver", 0, 525, 5);
-					}					
-				}
-				
-				int rnd2 = GetRandomUInt(0,1);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_sapper", 1, 810);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,6);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 356, 1);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 461, 1);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 649, 1);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 638, 1);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 225, 1);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 574);
-					}
-				}
-				int rnd4 = GetRandomUInt(0,1);
-
-				switch (rnd4)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_invis", 4, 947);
-					}
-				}					
-			}
-			case TFClass_Engineer:
-			{
-				int rnd = GetRandomUInt(0,5);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_sentry_revenge", 0, 141, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_building_rescue", 0, 997);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_drg_pomson", 0, 588, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_primary", 0, 1153);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_shotgun_primary", 0, 527, 5);
-					}					
-				}
-				
-				int rnd2 = GetRandomUInt(0,1);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_mechanical_arm", 1, 528, 5);
-					}
-				}
-
-				int rnd3 = GetRandomUInt(0,5);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 155, 20);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 329, 15);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 1123, 50);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_robot_arm", 2, 142, 15);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 589, 20);
-					}
-				}	
-			}
-		}
+		SelectClassWeapons(client, class);
 	}
 	else
 	{
-		switch (class)
-		{
-			case TFClass_Scout:
-			{
-				int rnd3 = GetRandomUInt(0,13);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_bat_wood", 2, 44, 15);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_bat_fish", 2, 572);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 317, 25);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 349, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 355, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_bat_giftwrap", 2, 648, 15);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 450, 10);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_bat_fish", 2, 221);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 1013, 5);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 939, 5);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 880, 25);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 474, 25);
-					}
-					case 13:
-					{
-						CreateWeapon(client, "tf_weapon_bat", 2, 1123, 50);
-					}
-				}
-			}
-			case TFClass_Sniper:
-			{
-				int rnd2 = GetRandomUInt(0,3);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_wearable", 1, 57, 10, true);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_wearable", 1, 231, 10, true);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_wearable", 1, 642, 10, true);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,8);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 171, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 232, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 401, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 1013, 5);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 939, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 880, 25);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 474, 25);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_club", 2, 1123, 50);
-					}
-				}			
-			}
-			case TFClass_Soldier:
-			{
-				int rnd2 = GetRandomUInt(0,2);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_wearable", 1, 133, 10, true);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_wearable", 1, 444, 10, true);
-					}
-				}
-				
-				int rnd3 = GetRandomUInt(0,10);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 128, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 447, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 775, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_katana", 2, 357, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 1013, 5);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 939, 5);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 880, 25);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 474, 25);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 1123, 50);
-					}
-				}
-			}
-			case TFClass_DemoMan:
-			{
-				int rnd = GetRandomUInt(0,2);
-
-				switch (rnd)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_wearable", 0, 405, 10, true);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_wearable", 0, 608, 10, true);
-					}
-				}				
-
-				int rnd2 = GetRandomUInt(0,3);
-
-				switch (rnd2)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_wearable_demoshield", 1, 131, _, true);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_wearable_demoshield", 1, 406, 10, true);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_wearable_demoshield", 1, 1099, _, true);
-					}
-				}				
-			
-				int rnd3 = GetRandomUInt(0,14);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 132, 5);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 172, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_stickbomb", 2, 307, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 327, 10);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_katana", 2, 357, 5);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_sword", 2, 482, 5);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 609, 10);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 1013, 5);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 939, 5);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 880, 25);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 474, 25);
-					}
-					case 13:
-					{						
-						CreateWeapon(client, "tf_weapon_sword", 2, 404);							
-					}
-					case 14:
-					{
-						CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50);
-					}
-				}
-			}
-			case TFClass_Medic:
-			{
-				int rnd3 = GetRandomUInt(0,9);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 37, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 173, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 304, 15);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 413, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 1013, 5);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 939, 5);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 880, 25);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 474, 25);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50);
-					}
-				}	
-			}
-			case TFClass_Heavy:
-			{
-				int rnd3 = GetRandomUInt(0,12);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 43, 7);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 239, 10);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 310, 10);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 331, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 426, 10);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 656, 10);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_fists", 2, 587, 10);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
-					}
-				}				
-			}
-			case TFClass_Pyro:
-			{
-				int rnd3 = GetRandomUInt(0,16);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 38, 10);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 153, 5);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 214, 5);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 326, 10);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 348, 10);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 593, 10);
-					}
-					case 7:
-					{
-						CreateWeapon(client, "tf_weapon_breakable_sign", 2, 813);
-					}
-					case 8:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 457, 10);
-					}
-					case 9:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 739);
-					}
-					case 10:
-					{
-						CreateWeapon(client, "tf_weapon_slap", 2, 1181);
-					}
-					case 11:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 466, 5);
-					}
-					case 12:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5);
-					}
-					case 13:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5);
-					}
-					case 14:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25);
-					}
-					case 15:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25);
-					}
-					case 16:
-					{
-						CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50);
-					}
-				}
-			}
-			case TFClass_Spy:
-			{
-				int rnd3 = GetRandomUInt(0,6);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 356, 1);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 461, 1);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 649, 1);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 638, 1);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 225, 1);
-					}
-					case 6:
-					{
-						CreateWeapon(client, "tf_weapon_knife", 2, 574);
-					}
-				}
-				int rnd4 = GetRandomUInt(0,1);
-
-				switch (rnd4)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_invis", 4, 947);
-					}
-				}					
-			}
-			case TFClass_Engineer:
-			{
-				int rnd3 = GetRandomUInt(0,5);
-
-				switch (rnd3)
-				{
-					case 1:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 155, 20);
-					}
-					case 2:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 329, 15);
-					}
-					case 3:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 1123, 50);
-					}
-					case 4:
-					{
-						CreateWeapon(client, "tf_weapon_robot_arm", 2, 142, 15);
-					}
-					case 5:
-					{
-						CreateWeapon(client, "tf_weapon_wrench", 2, 1123, 50);
-					}				
-				}	
-			}
-		}
+		SelectMedievalClassWeapons(client, class);
 	}
 
+	SelectActionItem(client);
 	CreateTimer(0.1, TimerHealth, client, TIMER_FLAG_NO_MAPCHANGE);	
 	return Plugin_Continue;
+}
+
+void SelectActionItem(int client)
+{
+	int rnd = GetRandomUInt(0,3);
+
+	switch (rnd)
+	{
+		case 1:
+		{
+			CreateWeapon(client, "tf_wearable", -1, 241, 5, true); // Duel MiniGame
+		}
+		case 2:
+		{
+			CreateWeapon(client, "tf_powerup_bottle", -1, 489, _, true); // Power Up Canteen
+		}
+		case 3:
+		{
+			CreateWeapon(client, "tf_weapon_spellbook", -1, 1069, 1, false); // Halloween Spellbook
+		}
+	}
+}
+
+void SelectMedievalClassWeapons(int client, TFClassType class)
+{
+	int rnd = 0;
+
+	switch (class)
+	{
+		case TFClass_Scout:
+		{
+			rnd = GetRandomUInt(0,13);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_bat_wood", 2, 44, 15); // Sandman
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_bat_fish", 2, 572); // Unarmed Combat
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 317, 25);  // Candy Cane
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 349, 10); // Sun-on-a-Stick
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 355, 5); // Fan O'War
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_bat_giftwrap", 2, 648, 15); // Wrap Assassin
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 450, 10); // Atomizer
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_bat_fish", 2, 221); // Holy Mackerel
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 1013, 5); // Ham Shank
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 939, 5); // Bat Outta Hell
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 880, 25); // Freedom Staff
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 474, 25); // Conscientious Objector
+				}
+				case 13:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 1123, 50); // Necro Smasher
+				}
+			}
+		}
+		case TFClass_Sniper:
+		{
+			rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_wearable", 1, 57, 10, true); // Razorback
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_wearable", 1, 231, 10, true); // Darwin's Danger Shield
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_wearable", 1, 642, 10, true); // Cozy Camper
+				}
+			}
+			
+			rnd = GetRandomUInt(0,8);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 171, 5); // Tribalman's Shiv
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 232, 5); // Bushwacka
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 401, 5); // Shahanshah
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 1013, 5); // Ham Shank
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 939, 5); // Bat Outta Hell
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 880, 25); // Freedom Staff
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 474, 25); // Conscientious Objector
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 1123, 50); // Necro Smasher
+				}
+			}			
+		}
+		case TFClass_Soldier:
+		{
+			rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_wearable", 1, 133, 10, true); // Gunboats
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_wearable", 1, 444, 10, true); // Mantreads
+				}
+			}
+			
+			rnd = GetRandomUInt(0,10);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 128, 10); // Equalizer
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5); // Pain Train
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 447, 10); // Disciplinary Action
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 775, 10); // Escape Plan
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_katana", 2, 357, 5); // Half-Zatoichi
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 1013, 5); // Ham Shank
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 939, 5); // Bat Outta Hell
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 880, 25); // Freedom Staff
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 474, 25); // Conscientious Objector
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 1123, 50); // Necro Smasher
+				}
+			}
+		}
+		case TFClass_DemoMan:
+		{
+			rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_wearable", 0, 405, 10, true); // Ali Baba's Wee Booties
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_wearable", 0, 608, 10, true); // Bootlegger
+				}
+			}				
+
+			rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_wearable_demoshield", 1, 131, _, true); // Chargin' Targe
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_wearable_demoshield", 1, 406, 10, true); // Splendid Screen
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_wearable_demoshield", 1, 1099, _, true); // Tide Turner
+				}
+			}				
+		
+			rnd = GetRandomUInt(0,14);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 132, 5); // Eyelander
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5); // Pain Train
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 172, 5); // Scotsman's Skullcutter
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_stickbomb", 2, 307, 10); // Ullapool Caber
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 327, 10); // Claidheamohmor
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_katana", 2, 357, 5); // Half-Zatoichi
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 482, 5); // Nessie's Nine Iron
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 609, 10); // Scottish Handshake
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 1013, 5); // Ham Shank
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 939, 5); // Bat Outta Hell
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 880, 25); // Freedom Staff
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 474, 25); // Conscientious Objector
+				}
+				case 13:
+				{						
+					CreateWeapon(client, "tf_weapon_sword", 2, 404); // Persian Persuader					
+				}
+				case 14:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50); // Necro Smasher
+				}
+			}
+		}
+		case TFClass_Medic:
+		{
+			rnd = GetRandomUInt(0,9);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 37, 10); // Ubersaw
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 173, 5); // Vita-Saw
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 304, 15);  // Amputator
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 413, 10); // Solemn Vow
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 1013, 5); // Ham Shank
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 939, 5); // Bat Outta Hell
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 880, 25); // Freedom Staff
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 474, 25); // Conscientious Objector
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50); // Necro Smasher
+				}
+			}	
+		}
+		case TFClass_Heavy:
+		{
+			rnd = GetRandomUInt(0,12);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 43, 7); // Killing Gloves of Boxing
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 239, 10); // Gloves of Running Urgently
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 310, 10); // Warrior's Spirit
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 331, 10); // Fists of Steel
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 426, 10); // Eviction Notice
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 656, 10);  // Holiday Punch
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 587, 10); // Apoco-Fists
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5); // Ham Shank
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5); // Bat Outta Hell
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25); // Freedom Staff
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25); // Conscientious Objector
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
+				}
+			}				
+		}
+		case TFClass_Pyro:
+		{
+			rnd = GetRandomUInt(0,16);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 38, 10); // Axtinguisher
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 153, 5); // Homewrecker
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 214, 5); // Powerjack
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 326, 10); // Back Scratcher
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 348, 10); // Sharpened Volcano Fragment
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 593, 10); // Third Degree
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_breakable_sign", 2, 813); // Neon Annihilator
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 457, 10); // Postal Pummeler
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 739); // Lollichop
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_slap", 2, 1181); // Hot Hand
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 466, 5); // Maul
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5); // Ham Shank
+				}
+				case 13:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5); // Bat Outta Hell
+				}
+				case 14:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25); // Freedom Staff
+				}
+				case 15:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25); // Conscientious Objector
+				}
+				case 16:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
+				}
+			}
+		}
+		case TFClass_Spy:
+		{
+			rnd = GetRandomUInt(0,6);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 356, 1); // Conniver's Kunai
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 461, 1); // Big Earner
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 649, 1); // Spy-cicle
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 638, 1); // Sharp Dresser
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 225, 1); // Your Eternal Reward
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 574); // Wanga Prick
+				}
+			}
+
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_invis", 4, 947); // Quackenbirdt
+				}
+			}					
+		}
+		case TFClass_Engineer:
+		{
+			rnd = GetRandomUInt(0,5);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 155, 20); // Southern Hospitality
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 329, 15); // Jag
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 1123, 50); // Necro Smasher
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_robot_arm", 2, 142, 15); // Gunslinger
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 589, 50); // Eureka Effect
+				}				
+			}	
+		}
+	}
+}
+
+void SelectClassWeapons(int client, TFClassType class)
+{
+	int rnd = 0;
+
+	switch (class)
+	{
+		case TFClass_Scout:
+		{
+			rnd = GetRandomUInt(0,5);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_scattergun", 0, 45, 10); // Force-a-Nature
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_handgun_scout_primary", 0, 220, 1);  // Shortstop
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_soda_popper", 0, 448, 10); // Soda Popper
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_pep_brawler_blaster", 0, 772, 10); // Baby Face's Blaster
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_scattergun", 0, 1103); // Back Scatter
+				}
+			}
+			
+			rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_handgun_scout_secondary", 1, 773, 10);  // Pretty Boy's Pocket Pistol
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_handgun_scout_secondary", 1, 449, 15);  // Winger
+				}
+			}
+			
+			rnd = GetRandomUInt(0,13);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_bat_wood", 2, 44, 15); // Sandman
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_bat_fish", 2, 572); // Unarmed Combat
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 317, 25);  // Candy Cane
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 349, 10); // Sun-on-a-Stick
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 355, 5); // Fan O'War
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_bat_giftwrap", 2, 648, 15); // Wrap Assassin
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 450, 10); // Atomizer
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_bat_fish", 2, 221);  // Holy Mackerel
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 1013, 5);  // Ham Shank
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 939, 5); // Bat Outta Hell
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 880, 25); // Freedom Staff
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 474, 25);  // Conscientious Objector
+				}
+				case 13:
+				{
+					CreateWeapon(client, "tf_weapon_bat", 2, 1123, 50);  // Necro Smasher
+				}
+			}
+		}
+		case TFClass_Sniper:
+		{
+			rnd = GetRandomUInt(0,8);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_compound_bow", 0, 56, 10); // Huntsman
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_sniperrifle", 0, 230, 1); // Sydney Sleeper
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_sniperrifle_decap", 0, 402, 10); // Bazaar Bargain
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_sniperrifle", 0, 526, 5); // Machina
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_sniperrifle", 0, 752, 1); // Hitman's Heatmaker
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_sniperrifle_classic", 0, 1098, 1); // Classic
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_compound_bow", 0, 1092, 10); // Fortified Compound
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_sniperrifle", 0, 851, 1); // AWPer Hand
+				}
+			}
+			
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_charged_smg", 1, 751, 1); // Cleaner's Carabine
+				}
+			}
+			
+			rnd = GetRandomUInt(0,8);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 171, 5); // Tribalman's Shiv
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 232, 5); // Bushwacka
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 401, 5); // Shahanshah
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 1013, 5); // Ham Shank
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 939, 5); // Bat Outta Hell
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 880, 25); // Freedom Staff
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 474, 25); // Conscientious Objector
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_club", 2, 1123, 50); // Necro Smasher
+				}
+			}			
+		}
+		case TFClass_Soldier:
+		{
+			rnd = GetRandomUInt(0,7);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher_directhit", 0, 127, 1); // Direct Hit
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 228, 5); // Black Box
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 414, 25); // Liberty Launcher
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_particle_cannon", 0, 441, 30); // Cow Mangler 5000
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 513, 5); // Original
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher_airstrike", 0, 1104); // Air Strike
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 730); // Beggar's Bazooka
+				}
+			}
+			
+			rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_raygun", 1, 442, 30); // Righteous Bison
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_soldier", 1, 1153); // Panic Attack Shotgun
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_soldier", 1, 415, 10); // Reserve Shooter
+				}
+			}
+			
+			rnd = GetRandomUInt(0,10);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 128, 10); // Equalizer
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5); // Pain Train
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 447, 10); // Disciplinary Action
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 775, 10); // Escape Plan
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_katana", 2, 357, 5); // Half-Zatoichi
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 1013, 5); // Ham Shank
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 939, 5);  // Bat Outta Hell
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 880, 25); // Freedom Staff
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 474, 25); // Conscientious Objector
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 1123, 50); // Necro Smasher
+				}
+			}
+		}
+		case TFClass_DemoMan:
+		{
+			rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_grenadelauncher", 0, 1151); // Iron Bomber
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_cannon", 0, 996, 10); // Loose Cannon
+				}
+			}
+			
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_pipebomblauncher", 1, 1150); // Quickiebomb Launcher
+				}
+			}
+			
+			rnd = GetRandomUInt(0,13);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 132, 5); // Eyelander
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shovel", 2, 154, 5); // Pain Train
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 172, 5); // Scotsman's Skullcutter
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_stickbomb", 2, 307, 10); // Ullapool Caber
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 327, 10); // Claidheamohmor
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_katana", 2, 357, 5); // Half-Zatoichi
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 482, 5); // Nessie's Nine Iron
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 609, 10); // Scottish Handshake
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 1013, 5); // Ham Shank
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 939, 5); // Bat Outta Hell
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 880, 25); // Freedom Staff
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 474, 25); // Conscientious Objector
+				}
+				case 13:
+				{
+					CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50); // Necro Smasher
+				}
+			}				
+		}
+		case TFClass_Medic:
+		{
+			rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_syringegun_medic", 0, 36, 5); // Blutsauger
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_crossbow", 0, 305, 15); // Crusader's Crossbow
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_syringegun_medic", 0, 412, 5); // Overdose
+				}
+			}
+			
+			rnd = GetRandomUInt(0,3);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_medigun", 1, 35, 8); // Kritzkrieg
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_medigun", 1, 411, 8); // Quick-Fix
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_medigun", 1, 998, 8); // Vaccinator
+				}
+			}
+			
+			rnd = GetRandomUInt(0,9);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 37, 10); // Ubersaw
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 173, 5); // Vita-Saw
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 304, 15); // Amputator
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 413, 10); // Solemn Vow
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 1013, 5); // Ham Shank
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 939, 5); // Bat Outta Hell
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 880, 25); // Freedom Staff
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 474, 25); // Conscientious Objector
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50); // Necro Smasher
+				}
+			}			
+		}
+		case TFClass_Heavy:
+		{
+			rnd = GetRandomUInt(0,4);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_minigun", 0, 41, 5); // Natascha
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_minigun", 0, 312, 5); // Brass Beast
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_minigun", 0, 424, 5); // Tomislav
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_minigun", 0, 811); // Huo Long Heatmaker
+				}
+			}
+			
+			rnd = GetRandomUInt(0,2);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_hwg", 1, 425, 10); // Family Business
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_hwg", 1, 1153); // Panic Attack Shotgun
+				}						
+			}
+			
+			rnd = GetRandomUInt(0,12);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 43, 7); // Killing Gloves of Boxing
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 239, 10); // Gloves of Running Urgently
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 310, 10); // Warrior's Spirit
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 331, 10); // Fists of Steel
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 426, 10); // Eviction Notice
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 656, 10); // Holiday Punch
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_fists", 2, 587, 10);  // Apoco-Fists
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5); // Ham Shank
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5); // Bat Outta Hell
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25); // Freedom Staff
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25); // Conscientious Objector
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
+				}
+			}						
+		}
+		case TFClass_Pyro:
+		{
+			rnd = GetRandomUInt(0,6);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_flamethrower", 0, 40, 10); // Backburner
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_flamethrower", 0, 215, 10); // Degreaser
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_flamethrower", 0, 594, 10); // Phlogistinator
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_flamethrower", 0, 741, 10); // Rainblower
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_rocketlauncher_fireball", 0, 1178); // Dragon's Fury
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_flamethrower", 0, 30474, 25); // Nostromo Napalmer
+				}
+			}
+			
+			rnd = GetRandomUInt(0,6);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_flaregun", 1, 39, 10); // Flare gun
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_flaregun", 1, 351, 10); // Detonator
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_flaregun_revenge", 1, 595, 30);  // Manmelter
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_flaregun", 1, 740, 10); // Scorch Shot
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_pyro", 1, 1153); // Panic Attack Shotgun
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_pyro", 1, 415, 10); // Reserve Shooter
+				}
+			}
+			
+			rnd = GetRandomUInt(0,16);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 38, 10); // Axtinguisher
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 153, 5); // Homewrecker
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 214, 5); // Powerjack
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 326, 10); // Back Scratcher
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 348, 10); // Sharpened Volcano Fragment
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 593, 10); // Third Degree
+				}
+				case 7:
+				{
+					CreateWeapon(client, "tf_weapon_breakable_sign", 2, 813); // Neon Annihilator
+				}
+				case 8:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 457, 10); // Postal Pummeler
+				}
+				case 9:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 739); // Lollichop
+				}
+				case 10:
+				{
+					CreateWeapon(client, "tf_weapon_slap", 2, 1181); // Hot Hand
+				}
+				case 11:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 466, 5); // Maul
+				}
+				case 12:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1013, 5); // Ham Shank
+				}
+				case 13:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 939, 5); // Bat Outta Hell
+				}
+				case 14:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 880, 25); // Freedom Staff
+				}
+				case 15:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 474, 25); // Conscientious Objector
+				}
+				case 16:
+				{
+					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
+				}
+			}			
+		}
+		case TFClass_Spy:
+		{
+			rnd = GetRandomUInt(0,4);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_revolver", 0, 61, 5); // Ambassador
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_revolver", 0, 224, 5); // L'Etranger
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_revolver", 0, 460, 5); // Enforcer
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_revolver", 0, 525, 5); // Diamondback
+				}					
+			}
+			
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_sapper", 1, 810); // Red-Tape Recorder
+				}
+			}
+			
+			rnd = GetRandomUInt(0,6);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 356, 1); // Conniver's Kunai
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 461, 1); // Big Earner
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 649, 1); // Spy-cicle
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 638, 1); // Sharp Dresser
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 225, 1); // Your Eternal Reward
+				}
+				case 6:
+				{
+					CreateWeapon(client, "tf_weapon_knife", 2, 574); // Wanga Prick
+				}
+			}
+
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_invis", 4, 947); // Quackenbirdt
+				}
+			}					
+		}
+		case TFClass_Engineer:
+		{
+			rnd = GetRandomUInt(0,5);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_sentry_revenge", 0, 141, 5); // Frontier Justice
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_building_rescue", 0, 997); // Rescue Ranger
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_drg_pomson", 0, 588, 10); // Pomson 6000
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_primary", 0, 1153); // Panic Attack Shotgun
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_shotgun_primary", 0, 527, 5); // Widowmaker
+				}					
+			}
+			
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_mechanical_arm", 1, 528, 5); // Short Circuit
+				}
+			}
+
+			rnd = GetRandomUInt(0,5);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 155, 20); // Southern Hospitality
+				}
+				case 2:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 329, 15); // Jag
+				}
+				case 3:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 1123, 50); // Necro Smasher
+				}
+				case 4:
+				{
+					CreateWeapon(client, "tf_weapon_robot_arm", 2, 142, 15); // Gunslinger
+				}
+				case 5:
+				{
+					CreateWeapon(client, "tf_weapon_wrench", 2, 589, 20); // Eureka Effect
+				}
+			}	
+		}
+	}
 }
 
 public void EventSuddenDeath(Handle event, const char[] name, bool dontBroadcast)
@@ -1884,14 +1906,14 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 
 	switch (itemindex)
 	{
-		case 810:
+		case 810: // Red-Tape Recorder
 		{
 			SetEntData(weapon, FindSendPropInfo(entclass, "m_iObjectType"), 3);
 			SetEntData(weapon, FindDataMapInfo(weapon, "m_iSubType"), 3);
 			int buildables[4] = {0,0,0,1};
 			SetEntDataArray(weapon, FindSendPropInfo(entclass, "m_aBuildableObjectTypes"), buildables, 4);
 		}
-		case 998:
+		case 998: // Vaccinator
 		{
 			int resistType = GetRandomUInt(0,4);
 
@@ -1907,7 +1929,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
 			SetEntData(client, iAmmoTable+iOffset, 40, 4);
 		}
-		case 39,351,740:
+		case 39,351,740: // Flare gun,Detonator,Scorch Shot
 		{
 			int iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
 			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
