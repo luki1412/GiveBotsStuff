@@ -5,7 +5,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.41"
+#define PLUGIN_VERSION "1.42"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -21,7 +21,7 @@ Handle g_hWeaponEquip;
 Handle g_hWWeaponEquip;
 Handle g_hTouched[MAXPLAYERS+1];
 
-public Plugin myinfo = 
+public Plugin myinfo =
 {
 	name = "Give Bots Weapons",
 	author = "luki1412",
@@ -30,9 +30,9 @@ public Plugin myinfo =
 	url = "https://forums.alliedmods.net/member.php?u=43109"
 }
 
-public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	if (GetEngineVersion() != Engine_TF2) 
+	if (GetEngineVersion() != Engine_TF2)
 	{
 		Format(error, err_max, "This plugin only works for Team Fortress 2.");
 		return APLRes_Failure;
@@ -42,9 +42,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	return APLRes_Success;
 }
 
-public void OnPluginStart() 
+public void OnPluginStart()
 {
-	ConVar hCVversioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD); 
+	ConVar hCVversioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	g_hCVEnabled = CreateConVar("sm_gbw_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTimer = CreateConVar("sm_gbw_delay", "0.1", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
 	g_hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
@@ -61,29 +61,29 @@ public void OnPluginStart()
 	{
 		OnMapStart();
 	}
-	
+
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
-	
+
 	if (!hGameConfig)
 	{
 		SetFailState("Failed to find give.bots.stuff.txt gamedata! Can't continue.");
-	}	
-	
+	}
+
 	StartPrepSDKCall(SDKCall_Player);
 	PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "WeaponEquip");
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
 	g_hWeaponEquip = EndPrepSDKCall();
-	
+
 	if (!g_hWeaponEquip)
 	{
 		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
 	}
-	
+
 	StartPrepSDKCall(SDKCall_Player);
 	PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "EquipWearable");
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
 	g_hWWeaponEquip = EndPrepSDKCall();
-	
+
 	if (!g_hWWeaponEquip)
 	{
 		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
@@ -125,7 +125,7 @@ public void OnClientDisconnect(int client)
 	delete g_hTouched[client];
 }
 
-public void player_hurt(Handle event, const char[] name, bool dontBroadcast) 
+public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 {
 	if (!GetConVarBool(g_hCVEnabled))
 	{
@@ -141,44 +141,42 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 
 	int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
 	int wep = GetPlayerWeaponSlot(victim, 0);
-	int wepIndex;
+	int wep3 = GetPlayerWeaponSlot(victim, 2);
+	int wepIndex, wepIndex3;
 
 	if (IsValidEntity(wep))
 	{
 		wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
 	}
 
-	int wep3 = GetPlayerWeaponSlot(victim, 2);
-	int wepIndex3;
-
 	if (IsValidEntity(wep3))
 	{
 		wepIndex3 = GetEntProp(wep3, Prop_Send, "m_iItemDefinitionIndex");
 	}
 
-	switch (wepIndex) 
+	switch (wepIndex)
 	{
 		case 594: // Phlogistinator
 		{
-			if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9 && wep == actwep) 
+			if ((wep == actwep) && (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0))
 			{
 				FakeClientCommand(victim, "taunt");
 			}
 		}
 	}
 
-	switch (wepIndex3) 
+	switch (wepIndex3)
 	{
 		case 589:  // Eureka Effect
 		{
-			if ((GetClientHealth(victim) < 60) && wep3 == actwep && (GetRandomUInt(1,2) == 1)) 
+			if ((wep3 == actwep) && (GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
 			{
 				FakeClientCommand(victim, "eureka_teleport 0");
 			}
 		}
 		case 304:  // Amputator
 		{
-			if ((GetClientHealth(victim) < 60) && wep3 == actwep && (GetRandomUInt(1,2) == 1))
+			if ((wep3 == actwep) && (GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
 			{
 				FakeClientCommand(victim, "taunt");
 			}
@@ -195,62 +193,34 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 		return Plugin_Continue;
 	}
 
-	if (buttons&IN_RELOAD)
-	{
-		int actwepa = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-		int wepa = GetPlayerWeaponSlot(victim, 0);
-		int wepIndexa;
-
-		if (IsValidEntity(wepa))
-		{
-			wepIndexa = GetEntProp(wepa, Prop_Send, "m_iItemDefinitionIndex");
-		}
-
-		if ((wepIndexa == 730) && (wepa == actwepa)) // Beggar's Bazooka
-		{
-			buttons ^= IN_RELOAD;
-
-			if (GetEntProp(wepa, Prop_Data, "m_iClip1") < 4) 
-			{
-				buttons |= IN_ATTACK;
-			}
-
-			return Plugin_Changed;
-		}
-	}
-
 	if (buttons&IN_ATTACK)
 	{
 		int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
 		int wep = GetPlayerWeaponSlot(victim, 0);
-		int wepIndex;
+		int wep2 = GetPlayerWeaponSlot(victim, 1);
+		int wep3 = GetPlayerWeaponSlot(victim, 2);
+		int wepIndex, wepIndex2, wepIndex3;
 
 		if (IsValidEntity(wep))
 		{
 			wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
 		}
 
-		int wep2 = GetPlayerWeaponSlot(victim, 1);
-		int wepIndex2;
-
 		if (IsValidEntity(wep2))
 		{
 			wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
 		}
-
-		int wep3 = GetPlayerWeaponSlot(victim, 2);
-		int wepIndex3;
 
 		if (IsValidEntity(wep3))
 		{
 			wepIndex3 = GetEntProp(wep3, Prop_Send, "m_iItemDefinitionIndex");
 		}
 
-		switch (wepIndex) 
+		switch (wepIndex)
 		{
 			case 448: // Soda Popper
 			{
-				if ((GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") > 99.9) && (wep == actwep)) 
+				if ((wep == actwep) && (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") == 100.0))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -259,7 +229,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 752: // Hitman's Heatmaker
 			{
-				if ((GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") > 99.9) && (wep == actwep)) 
+				if ((wep == actwep) && (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_RELOAD;
@@ -268,7 +238,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 441: // Cow Mangler 5000
 			{
-				if ((GetEntPropFloat(wep, Prop_Send, "m_flEnergy") > 19.9) && (wep == actwep) && (GetRandomUInt(1,2) == 1)) 
+				if ((wep == actwep) && (GetEntPropFloat(wep, Prop_Send, "m_flEnergy") == 20.0) && (GetRandomUInt(1,2) == 1))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -278,7 +248,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			case 996: // Loose Cannon
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep == actwep) && (g_iAttackPressed[victim] > 1)) 
+				if ((wep == actwep) && (g_iAttackPressed[victim] > 1))
 				{
 					buttons ^= IN_ATTACK;
 					g_iAttackPressed[victim] = 0;
@@ -287,19 +257,19 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 730: // Beggar's Bazooka
 			{
-				if ((wep == actwep) && (GetEntProp(wep, Prop_Data, "m_iClip1") > 0)) 
+				if ((wep == actwep) && (GetEntProp(wep, Prop_Data, "m_iClip1") > 0))
 				{
 					buttons ^= IN_ATTACK;
 					return Plugin_Changed;
-				}					
+				}
 			}
 		}
 
-		switch (wepIndex2) 
+		switch (wepIndex2)
 		{
 			case 751: // Cleaner's Carabine
 			{
-				if ((wep2 == actwep) && (GetRandomUInt(1,3) == 1)) 
+				if ((wep2 == actwep) && (GetEntProp(wep, Prop_Data, "m_iClip1") > 18))
 				{
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
@@ -307,31 +277,31 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 528: // Short Circuit
 			{
-				if ((wep2 == actwep) && (GetRandomUInt(1,3) == 1)) 
+				if ((wep2 == actwep) && (GetRandomUInt(1,3) == 1))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
-				}	
+				}
 			}
 			case 998: // Vaccinator
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep2 == actwep) && (g_iAttackPressed[victim] > 200)) 
+				if ((wep2 == actwep) && (g_iAttackPressed[victim] > 200))
 				{
 					buttons |= IN_RELOAD;
 					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
-				}	
+				}
 			}
 		}
 
-		switch (wepIndex3) 
+		switch (wepIndex3)
 		{
 			case 44:  // Sandman
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 20)) 
+				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 20))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -342,16 +312,45 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			case 648: // Wrap Assassin
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 15)) 
+				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 15))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
-				}	
+				}
 			}
 		}
-	} 
+	}
+	else if (buttons&IN_RELOAD)
+	{
+		int actwepa = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+		int wepa = GetPlayerWeaponSlot(victim, 0);
+		int wepIndexa;
+
+		if (IsValidEntity(wepa))
+		{
+			wepIndexa = GetEntProp(wepa, Prop_Send, "m_iItemDefinitionIndex");
+		}
+
+		switch (wepIndexa)
+		{
+			case 730: // Beggar's Bazooka
+			{
+				if (wepa == actwepa)
+				{
+					buttons ^= IN_RELOAD;
+
+					if (GetEntProp(wepa, Prop_Data, "m_iClip1") < 4)
+					{
+						buttons |= IN_ATTACK;
+					}
+
+					return Plugin_Changed;
+				}
+			}
+		}
+	}
 	else if (buttons&IN_FORWARD)
 	{
 		int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
@@ -363,11 +362,11 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
 		}
 
-		switch (wepIndex2) 
+		switch (wepIndex2)
 		{
 			case 447:  // Disciplinary Action
 			{
-				if (wep2 == actwep) 
+				if (wep2 == actwep)
 				{
 					buttons |= IN_ATTACK;
 					return Plugin_Changed;
@@ -379,7 +378,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 	return Plugin_Continue;
 }
 
-public void player_inv(Handle event, const char[] ename, bool dontBroadcast) 
+public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 {
 	if (!GetConVarBool(g_hCVEnabled) || g_bSuddenDeathMode || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
 	{
@@ -426,7 +425,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 {
 	int client = GetClientOfUserId(data);
 	g_hTouched[client] = null;
-	
+
 	if (!GetConVarBool(g_hCVEnabled) || g_bSuddenDeathMode || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !IsPlayerHere(client))
 	{
 		return Plugin_Stop;
@@ -434,7 +433,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 
 	int team = GetClientTeam(client);
 	int team2 = GetConVarInt(g_hCVTeam);
-	
+
 	switch (team2)
 	{
 		case 2:
@@ -465,7 +464,7 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 	}
 
 	SelectActionItem(client);
-	CreateTimer(0.1, TimerHealth, client, TIMER_FLAG_NO_MAPCHANGE);	
+	CreateTimer(0.1, TimerHealth, client, TIMER_FLAG_NO_MAPCHANGE);
 	return Plugin_Continue;
 }
 
@@ -575,7 +574,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_wearable", 1, 642, 10, true); // Cozy Camper
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,8);
 
 			switch (rnd)
@@ -612,7 +611,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_club", 2, 1123, 50); // Necro Smasher
 				}
-			}			
+			}
 		}
 		case TFClass_Soldier:
 		{
@@ -629,7 +628,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_wearable", 1, 444, 10, true); // Mantreads
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,10);
 
 			switch (rnd)
@@ -690,7 +689,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_wearable", 0, 608, 10, true); // Bootlegger
 				}
-			}				
+			}
 
 			rnd = GetRandomUInt(0,3);
 
@@ -708,8 +707,8 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_wearable_demoshield", 1, 1099, _, true); // Tide Turner
 				}
-			}				
-		
+			}
+
 			rnd = GetRandomUInt(0,14);
 
 			switch (rnd)
@@ -763,8 +762,8 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_bottle", 2, 474, 25); // Conscientious Objector
 				}
 				case 13:
-				{						
-					CreateWeapon(client, "tf_weapon_sword", 2, 404); // Persian Persuader					
+				{
+					CreateWeapon(client, "tf_weapon_sword", 2, 404); // Persian Persuader
 				}
 				case 14:
 				{
@@ -814,7 +813,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50); // Necro Smasher
 				}
-			}	
+			}
 		}
 		case TFClass_Heavy:
 		{
@@ -870,7 +869,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
 				}
-			}				
+			}
 		}
 		case TFClass_Pyro:
 		{
@@ -984,7 +983,7 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_invis", 4, 947); // Quackenbirdt
 				}
-			}					
+			}
 		}
 		case TFClass_Engineer:
 		{
@@ -1011,8 +1010,8 @@ void SelectMedievalClassWeapons(int client, TFClassType class)
 				case 5:
 				{
 					CreateWeapon(client, "tf_weapon_wrench", 2, 589, 50); // Eureka Effect
-				}				
-			}	
+				}
+			}
 		}
 	}
 }
@@ -1050,7 +1049,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_scattergun", 0, 1103); // Back Scatter
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,2);
 
 			switch (rnd)
@@ -1064,7 +1063,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_handgun_scout_secondary", 1, 449, 15);  // Winger
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,13);
 
 			switch (rnd)
@@ -1162,7 +1161,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_sniperrifle", 0, 851, 1); // AWPer Hand
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,1);
 
 			switch (rnd)
@@ -1172,7 +1171,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_charged_smg", 1, 751, 1); // Cleaner's Carabine
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,8);
 
 			switch (rnd)
@@ -1209,7 +1208,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_club", 2, 1123, 50); // Necro Smasher
 				}
-			}			
+			}
 		}
 		case TFClass_Soldier:
 		{
@@ -1246,7 +1245,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_rocketlauncher", 0, 730); // Beggar's Bazooka
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,3);
 
 			switch (rnd)
@@ -1264,7 +1263,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_shotgun_soldier", 1, 415, 10); // Reserve Shooter
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,10);
 
 			switch (rnd)
@@ -1326,7 +1325,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_cannon", 0, 996, 10); // Loose Cannon
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,1);
 
 			switch (rnd)
@@ -1336,7 +1335,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_pipebomblauncher", 1, 1150); // Quickiebomb Launcher
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,13);
 
 			switch (rnd)
@@ -1393,7 +1392,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_bottle", 2, 1123, 50); // Necro Smasher
 				}
-			}				
+			}
 		}
 		case TFClass_Medic:
 		{
@@ -1414,7 +1413,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_syringegun_medic", 0, 412, 5); // Overdose
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,3);
 
 			switch (rnd)
@@ -1432,7 +1431,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_medigun", 1, 998, 8); // Vaccinator
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,9);
 
 			switch (rnd)
@@ -1473,7 +1472,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_bonesaw", 2, 1123, 50); // Necro Smasher
 				}
-			}			
+			}
 		}
 		case TFClass_Heavy:
 		{
@@ -1498,7 +1497,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_minigun", 0, 811); // Huo Long Heatmaker
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,2);
 
 			switch (rnd)
@@ -1510,9 +1509,9 @@ void SelectClassWeapons(int client, TFClassType class)
 				case 2:
 				{
 					CreateWeapon(client, "tf_weapon_shotgun_hwg", 1, 1153); // Panic Attack Shotgun
-				}						
+				}
 			}
-			
+
 			rnd = GetRandomUInt(0,12);
 
 			switch (rnd)
@@ -1565,7 +1564,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
 				}
-			}						
+			}
 		}
 		case TFClass_Pyro:
 		{
@@ -1598,7 +1597,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_flamethrower", 0, 30474, 25); // Nostromo Napalmer
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,6);
 
 			switch (rnd)
@@ -1628,7 +1627,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_shotgun_pyro", 1, 415, 10); // Reserve Shooter
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,16);
 
 			switch (rnd)
@@ -1697,7 +1696,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_fireaxe", 2, 1123, 50); // Necro Smasher
 				}
-			}			
+			}
 		}
 		case TFClass_Spy:
 		{
@@ -1720,9 +1719,9 @@ void SelectClassWeapons(int client, TFClassType class)
 				case 4:
 				{
 					CreateWeapon(client, "tf_weapon_revolver", 0, 525, 5); // Diamondback
-				}					
+				}
 			}
-			
+
 			rnd = GetRandomUInt(0,1);
 
 			switch (rnd)
@@ -1732,7 +1731,7 @@ void SelectClassWeapons(int client, TFClassType class)
 					CreateWeapon(client, "tf_weapon_sapper", 1, 810); // Red-Tape Recorder
 				}
 			}
-			
+
 			rnd = GetRandomUInt(0,6);
 
 			switch (rnd)
@@ -1771,7 +1770,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_invis", 4, 947); // Quackenbirdt
 				}
-			}					
+			}
 		}
 		case TFClass_Engineer:
 		{
@@ -1798,9 +1797,9 @@ void SelectClassWeapons(int client, TFClassType class)
 				case 5:
 				{
 					CreateWeapon(client, "tf_weapon_shotgun_primary", 0, 527, 5); // Widowmaker
-				}					
+				}
 			}
-			
+
 			rnd = GetRandomUInt(0,1);
 
 			switch (rnd)
@@ -1835,7 +1834,7 @@ void SelectClassWeapons(int client, TFClassType class)
 				{
 					CreateWeapon(client, "tf_weapon_wrench", 2, 589, 20); // Eureka Effect
 				}
-			}	
+			}
 		}
 	}
 }
@@ -1873,16 +1872,16 @@ public void OnDroppedWeaponSpawnPost(int entity)
 bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int level = 0, bool wearable = false)
 {
 	int weapon = CreateEntityByName(classname);
-	
+
 	if (!IsValidEntity(weapon))
 	{
 		LogError("Failed to create a valid entity with class name [%s]! Skipping.", classname);
 		return false;
 	}
-	
+
 	char entclass[64];
 	GetEntityNetClass(weapon, entclass, sizeof(entclass));
-	SetEntData(weapon, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);	 
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_iAccountID"), 1);
 
@@ -1894,10 +1893,10 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 	{
 		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomUInt(1,99));
 	}
-	
+
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
 
-	if (!DispatchSpawn(weapon)) 
+	if (!DispatchSpawn(weapon))
 	{
 		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to spawn! Skipping.", classname, itemindex, weapon);
 		AcceptEntityInput(weapon, "Kill");
@@ -1933,25 +1932,25 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 		{
 			int iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
 			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
-			SetEntData(client, iAmmoTable+iOffset, 16, 4);			
+			SetEntData(client, iAmmoTable+iOffset, 16, 4);
 		}
 	}
 
-	if (slot > -1) 
+	if (slot > -1)
 	{
 		TF2_RemoveWeaponSlot(client, slot);
 	}
 
-	if (!wearable) 
+	if (!wearable)
 	{
 		SDKCall(g_hWeaponEquip, client, weapon);
-	} 
-	else 
+	}
+	else
 	{
 		SDKCall(g_hWWeaponEquip, client, weapon);
 	}
 
-	if ((slot > -1) && !wearable && (GetPlayerWeaponSlot(client, slot) != weapon)) 
+	if ((slot > -1) && !wearable && (GetPlayerWeaponSlot(client, slot) != weapon))
 	{
 		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to equip! This is probably caused by invalid gamedata.", classname, itemindex, weapon);
 		AcceptEntityInput(weapon, "Kill");
@@ -1964,7 +1963,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 public Action TimerHealth(Handle timer, any client)
 {
 	int hp = GetPlayerMaxHp(client);
-	
+
 	if (hp > 0)
 	{
 		SetEntityHealth(client, hp);
