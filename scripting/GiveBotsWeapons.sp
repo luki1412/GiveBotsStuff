@@ -5,11 +5,10 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.42"
+#define PLUGIN_VERSION "1.43"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
-bool g_bLateLoad;
 int g_iResourceEntity;
 int g_iAttackPressed[MAXPLAYERS+1];
 ConVar g_hCVTimer;
@@ -38,7 +37,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		return APLRes_Failure;
 	}
 
-	g_bLateLoad = late;
 	return APLRes_Success;
 }
 
@@ -56,11 +54,6 @@ public void OnPluginStart()
 
 	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Weapons");
-
-	if (g_bLateLoad)
-	{
-		OnMapStart();
-	}
 
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
 

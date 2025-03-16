@@ -4,10 +4,9 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.42"
+#define PLUGIN_VERSION "1.43"
 
 bool g_bMVM;
-bool g_bLateLoad;
 ConVar g_hCVTimer;
 ConVar g_hCVEnabled;
 ConVar g_hCVTeam;
@@ -32,7 +31,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 		return APLRes_Failure;
 	}
 
-	g_bLateLoad = late;
 	return APLRes_Success;
 }
 
@@ -49,11 +47,6 @@ public void OnPluginStart()
 
 	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Cosmetics");
-
-	if (g_bLateLoad)
-	{
-		OnMapStart();
-	}
 
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
 
