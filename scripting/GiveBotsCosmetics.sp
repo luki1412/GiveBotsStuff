@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.41"
+#define PLUGIN_VERSION "1.42"
 
 bool g_bMVM;
 bool g_bLateLoad;
@@ -404,7 +404,7 @@ bool SelectClassHat(int client, TFClassType class)
 	{
 		case TFClass_Scout:
 		{
-			rnd = GetRandomUInt(0,17);
+			rnd = GetRandomUInt(0,18);
 
 			switch (rnd)
 			{
@@ -476,11 +476,15 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 780, 6); // Fed-Fightin' Fedora
 				}
+				case 18:
+				{
+					CreateCosmetic(client, 853, 6); // Crafty Hair
+				}
 			}
 		}
 		case TFClass_Sniper:
 		{
-			rnd = GetRandomUInt(0,18);
+			rnd = GetRandomUInt(0,19);
 
 			switch (rnd)
 			{
@@ -558,11 +562,15 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 819, 6); // Lone Star
 				}
+				case 19:
+				{
+					CreateCosmetic(client, 877, 6); // Stovepipe Sniper Shako
+				}
 			}
 		}
 		case TFClass_Soldier:
 		{
-			rnd = GetRandomUInt(0,24);
+			rnd = GetRandomUInt(0,27);
 
 			switch (rnd)
 			{
@@ -665,11 +673,23 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 732, 6); // Helmet Without a Home
 				}
+				case 25:
+				{
+					CreateCosmetic(client, 853, 6); // Crafty Hair
+				}
+				case 26:
+				{
+					CreateCosmetic(client, 829, 6); // War Pig
+				}
+				case 27:
+				{
+					CreateCosmetic(client, 945, 6); // Chief Constable
+				}
 			}
 		}
 		case TFClass_DemoMan:
 		{
-			rnd = GetRandomUInt(0,20);
+			rnd = GetRandomUInt(0,22);
 
 			switch (rnd)
 			{
@@ -755,11 +775,19 @@ bool SelectClassHat(int client, TFClassType class)
 					CreateCosmetic(client, 703, 6); // Bolgan
 					face = true;
 				}
+				case 21:
+				{
+					CreateCosmetic(client, 876, 6); // K-9 Mane
+				}
+				case 22:
+				{
+					CreateCosmetic(client, 289, 6, 31, 31); // Voodoo JuJu
+				}
 			}
 		}
 		case TFClass_Medic:
 		{
-			rnd = GetRandomUInt(0,15);
+			rnd = GetRandomUInt(0,17);
 
 			switch (rnd)
 			{
@@ -824,11 +852,19 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 778, 6); // Gentleman's Ushanka
 				}
+				case 16:
+				{
+					CreateCosmetic(client, 853, 6); // Crafty Hair
+				}
+				case 17:
+				{
+					CreateCosmetic(client, 867, 6); // Combat Medic's Crusher Cap
+				}
 			}
 		}
 		case TFClass_Heavy:
 		{
-			rnd = GetRandomUInt(0,23);
+			rnd = GetRandomUInt(0,27);
 
 			switch (rnd)
 			{
@@ -928,11 +964,27 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 635, 6, 10, 10); // War Head
 				}
+				case 24:
+				{
+					CreateCosmetic(client, 853, 6); // Crafty Hair
+				}
+				case 25:
+				{
+					CreateCosmetic(client, 821, 6); // Soviet Gentleman
+				}
+				case 26:
+				{
+					CreateCosmetic(client, 866, 6); // Heavy Artillery Officer's Cap
+				}
+				case 27:
+				{
+					CreateCosmetic(client, 876, 6); // K-9 Mane
+				}
 			}
 		}
 		case TFClass_Pyro:
 		{
-			rnd = GetRandomUInt(0,23);
+			rnd = GetRandomUInt(0,25);
 
 			switch (rnd)
 			{
@@ -1031,11 +1083,19 @@ bool SelectClassHat(int client, TFClassType class)
 					CreateCosmetic(client, 783, 6); // HazMat Headcase
 					face = true;
 				}
+				case 24:
+				{
+					CreateCosmetic(client, 854, 6); // Area 451
+				}
+				case 25:
+				{
+					CreateCosmetic(client, 937, 6); // Wraith Wrap
+				}
 			}
 		}
 		case TFClass_Spy:
 		{
-			rnd = GetRandomUInt(0,13);
+			rnd = GetRandomUInt(0,15);
 
 			switch (rnd)
 			{
@@ -1092,11 +1152,19 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 637, 6, 10, 10); // Dashin' Hashshashin
 				}
+				case 14:
+				{
+					CreateCosmetic(client, 825, 6); // Hat of Cards
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 872, 6); // Lacking Moral Fiber Mask
+				}
 			}
 		}
 		case TFClass_Engineer:
 		{
-			rnd = GetRandomUInt(0,16);
+			rnd = GetRandomUInt(0,17);
 
 			switch (rnd)
 			{
@@ -1164,6 +1232,10 @@ bool SelectClassHat(int client, TFClassType class)
 				case 16:
 				{
 					CreateCosmetic(client, 590); // Brainiac Hairpiece
+				}
+				case 17:
+				{
+					CreateCosmetic(client, 853, 6); // Crafty Hair
 				}
 			}
 		}
@@ -1269,7 +1341,7 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Soldier:
 		{
-			rnd = GetRandomUInt(0,3);
+			rnd = GetRandomUInt(0,4);
 
 			switch (rnd)
 			{
@@ -1285,11 +1357,15 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 647, 6, 15, 15); // All-Father
 				}
+				case 4:
+				{
+					CreateCosmetic(client, 875, 6); // Menpo
+				}
 			}
 		}
 		case TFClass_DemoMan:
 		{
-			rnd = GetRandomUInt(0,2);
+			rnd = GetRandomUInt(0,4);
 
 			switch (rnd)
 			{
@@ -1301,11 +1377,19 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 709, 6); // Snapped Pupil
 				}
+				case 3:
+				{
+					CreateCosmetic(client, 830, 6); // Bearded Bombardier
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 875, 6); // Menpo
+				}
 			}
 		}
 		case TFClass_Medic:
 		{
-			rnd = GetRandomUInt(0,4);
+			rnd = GetRandomUInt(0,5);
 
 			switch (rnd)
 			{
@@ -1324,6 +1408,10 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				case 4:
 				{
 					CreateCosmetic(client, 657, 6); // Nine-Pipe Problem
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 826, 6); // Medi-Mask
 				}
 			}
 		}
@@ -1365,7 +1453,7 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Spy:
 		{
-			rnd = GetRandomUInt(0,6);
+			rnd = GetRandomUInt(0,7);
 
 			switch (rnd)
 			{
@@ -1392,6 +1480,10 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				case 6:
 				{
 					CreateCosmetic(client, 766, 6); // Doublecross-Comm
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 919, 6); // Scarecrow
 				}
 			}
 		}
@@ -1519,7 +1611,7 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 	{
 		case TFClass_Scout:
 		{
-			rnd = GetRandomUInt(0,6);
+			rnd = GetRandomUInt(0,8);
 
 			switch (rnd)
 			{
@@ -1547,11 +1639,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 814, 6); // Triad Trinket
 				}
+				case 7:
+				{
+					CreateCosmetic(client, 827, 6); // Track Terrorizer
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 925, 6); // Spooky Sleeves
+				}
 			}
 		}
 		case TFClass_Sniper:
 		{
-			rnd = GetRandomUInt(0,4);
+			rnd = GetRandomUInt(0,6);
 
 			switch (rnd)
 			{
@@ -1571,11 +1671,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 814, 6); // Triad Trinket
 				}
+				case 5:
+				{
+					CreateCosmetic(client, 925, 6); // Spooky Sleeves
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 917, 6); // Sir Hootsalot
+				}
 			}
 		}
 		case TFClass_Soldier:
 		{
-			rnd = GetRandomUInt(0,5);
+			rnd = GetRandomUInt(0,8);
 
 			switch (rnd)
 			{
@@ -1599,11 +1707,23 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 731, 6); // Captain's Cocktails
 				}
+				case 6:
+				{
+					CreateCosmetic(client, 922, 6); // Bonedolier
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 936, 6); // Exorcizor
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 948, 6); // Deadliest Duckling
+				}
 			}
 		}
 		case TFClass_DemoMan:
 		{
-			rnd = GetRandomUInt(0,5);
+			rnd = GetRandomUInt(0,9);
 
 			switch (rnd)
 			{
@@ -1627,11 +1747,27 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 776, 6); // Bird-Man of Aberdeen
 				}
+				case 6:
+				{
+					CreateCosmetic(client, 874, 6); // King of Scotland Cape
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 922, 6); // Bonedolier
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 925, 6); // Spooky Sleeves
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 948, 6); // Deadliest Duckling
+				}
 			}
 		}
 		case TFClass_Medic:
 		{
-			rnd = GetRandomUInt(0,5);
+			rnd = GetRandomUInt(0,7);
 
 			switch (rnd)
 			{
@@ -1655,11 +1791,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 769, 6); // Quadwrangler
 				}
+				case 6:
+				{
+					CreateCosmetic(client, 878, 6); // Foppish Physician
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 936, 6); // Exorcizor
+				}
 			}
 		}
 		case TFClass_Heavy:
 		{
-			rnd = GetRandomUInt(0,5);
+			rnd = GetRandomUInt(0,7);
 
 			switch (rnd)
 			{
@@ -1683,11 +1827,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 814, 6); // Triad Trinket
 				}
+				case 6:
+				{
+					CreateCosmetic(client, 925, 6); // Spooky Sleeves
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 946, 6); // Siberian Sophisticate
+				}
 			}
 		}
 		case TFClass_Pyro:
 		{
-			rnd = GetRandomUInt(0,9);
+			rnd = GetRandomUInt(0,14);
 
 			switch (rnd)
 			{
@@ -1727,11 +1879,31 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 820, 6); // Russian Rocketeer
 				}
+				case 10:
+				{
+					CreateCosmetic(client, 856, 6); // Pyrotechnic Tote
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 922, 6); // Bonedolier
+				}
+				case 12:
+				{
+					CreateCosmetic(client, 936, 6); // Exorcizor
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 938, 6); // Coffin Kit
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 948, 6); // Deadliest Duckling
+				}
 			}
 		}
 		case TFClass_Spy:
 		{
-			rnd = GetRandomUInt(0,4);
+			rnd = GetRandomUInt(0,6);
 
 			switch (rnd)
 			{
@@ -1751,11 +1923,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 814, 6); // Triad Trinket
 				}
+				case 5:
+				{
+					CreateCosmetic(client, 879, 6); // Distinguished Rogue
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 936, 6); // Exorcizor
+				}
 			}
 		}
 		case TFClass_Engineer:
 		{
-			rnd = GetRandomUInt(0,4);
+			rnd = GetRandomUInt(0,5);
 
 			switch (rnd)
 			{
@@ -1774,6 +1954,10 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				case 4:
 				{
 					CreateCosmetic(client, 814, 6); // Triad Trinket
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 925, 6); // Spooky Sleeves
 				}
 			}
 		}
@@ -1813,7 +1997,7 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 	{
 		case TFClass_Scout:
 		{
-			rnd = GetRandomUInt(0,2);
+			rnd = GetRandomUInt(0,4);
 
 			switch (rnd)
 			{
@@ -1825,11 +2009,19 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 734, 6, 10, 10); // Teufort Tooth Kicker
 				}
+				case 3:
+				{
+					CreateCosmetic(client, 924, 6); // Spooky Shoes
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 990, 6); // Aqua Flops
+				}
 			}
 		}
 		case TFClass_Sniper:
 		{
-			rnd = GetRandomUInt(0,2);
+			rnd = GetRandomUInt(0,4);
 
 			switch (rnd)
 			{
@@ -1840,6 +2032,14 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 				case 2:
 				{
 					CreateCosmetic(client, 734, 6, 10, 10); // Teufort Tooth Kicker
+				}
+				case 3:
+				{
+					CreateCosmetic(client, 824, 6); // Koala Compact
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 948, 6); // Deadliest Duckling
 				}
 			}
 		}
@@ -1921,7 +2121,7 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Engineer:
 		{
-			rnd = GetRandomUInt(0,8);
+			rnd = GetRandomUInt(0,10);
 
 			switch (rnd)
 			{
@@ -1956,6 +2156,14 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 				case 8:
 				{
 					CreateCosmetic(client, 734, 6, 10, 10); // Teufort Tooth Kicker
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 823, 6); // Pocket Purrer
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 948, 6); // Deadliest Duckling
 				}
 			}
 		}
