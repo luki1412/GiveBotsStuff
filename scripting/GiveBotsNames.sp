@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.02"
+#define PLUGIN_VERSION "1.03"
 
 bool g_bMVM = false;
 int g_iNamesArraySize = 0;
@@ -22,6 +22,7 @@ ConVar g_hCVSuppressNameChangeText;
 Handle g_hOrderedNamesArray;
 Handle g_hRandomizedNamesArray;
 Handle g_hSelectedNamesArray;
+UserMsg g_umSayText2;
 
 public Plugin myinfo =
 {
@@ -57,21 +58,12 @@ public void OnPluginStart()
 	g_hCVSuppressNameChangeText = CreateConVar("sm_gbn_suppressnamechangetext", "1", "Enables/disables suppressing chat text when bots are renamed.", FCVAR_NONE, true, 0.0, true, 1.0);
     RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
 
+	BuildPath(Path_SM, g_sNamesFilePath, sizeof(g_sNamesFilePath), "configs/GiveBotsNames.txt");
+	g_umSayText2 = GetUserMessageId("SayText2");
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
 	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Names");
-	BuildPath(Path_SM, g_sNamesFilePath, sizeof(g_sNamesFilePath), "configs/GiveBotsNames.txt");
-	UserMsg SayText2 = GetUserMessageId("SayText2");
-
-	if (SayText2 == INVALID_MESSAGE_ID)
-	{
-		LogError("This game doesn't support SayText2. Unable to suppress chat messages.");
-	}
-	else 
-	{
-		HookUserMessage(SayText2, UserMessage_SayText2, true);
-	}
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -81,11 +73,24 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 		HookEvent("player_changename", Event_PlayerChangename);
 		HookEvent("player_team", Event_PlayerTeam);
 
+		if (g_umSayText2 == INVALID_MESSAGE_ID)
+		{
+			LogError("This game doesn't support SayText2. Unable to suppress chat messages.");
+		}
+		else 
+		{
+			HookUserMessage(g_umSayText2, UserMessage_SayText2, true);
+		}
 	}
 	else
 	{
 		UnhookEvent("player_changename", Event_PlayerChangename);
 		UnhookEvent("player_team", Event_PlayerTeam);
+
+		if (g_umSayText2 != INVALID_MESSAGE_ID)
+		{
+			UnhookUserMessage(g_umSayText2, UserMessage_SayText2, true);
+		}
 	}
 }
 
