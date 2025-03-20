@@ -1,4 +1,4 @@
-; lines beginning with ; are ignored
+; lines beginning with ; are ignored otherwise each like means one name
 ; at least 1 character is required and starting and ending whitespace is trimmed
 come to papa
 Gassy Man
