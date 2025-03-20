@@ -4,9 +4,9 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.00"
+#define PLUGIN_VERSION "1.01"
 
-bool g_bMVM;
+bool g_bMVM = false;
 int g_iNamesArraySize = 0;
 int g_iNamesFilePosition = 0;
 char g_sNamesFilePath[PLATFORM_MAX_PATH];
@@ -17,6 +17,7 @@ ConVar g_hCVPrefix;
 ConVar g_hCVSuffix;
 ConVar g_hCVRandomize;
 ConVar g_hCVEnforceNameChange;
+ConVar g_hCVRenameOnReload;
 Handle g_hOrderedNamesArray;
 Handle g_hRandomizedNamesArray;
 Handle g_hSelectedNamesArray;
@@ -47,10 +48,11 @@ public void OnPluginStart()
 	g_hCVEnabled = CreateConVar("sm_gbn_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTeam = CreateConVar("sm_gbn_team", "1", "Team whose players get renamed: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	g_hCVMVMSupport = CreateConVar("sm_gbn_mvm", "0", "Enables/disables giving bots names when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVPrefix = CreateConVar("sm_gbn_prefix", "[BOT] ", "Prefix for all bot names. Requires name reload.", FCVAR_NONE);
-	g_hCVSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires name reload.", FCVAR_NONE);
+	g_hCVPrefix = CreateConVar("sm_gbn_prefix", "", "Prefix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
+	g_hCVSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
 	g_hCVRandomize = CreateConVar("sm_gbn_randomize", "1", "Randomize names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforce", "0", "Enforce names by catching name changes. Performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enforce names by catching name changes. Performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Checks and renames all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
     RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
 
 	OnEnabledChanged(g_hCVEnabled, "", "");
@@ -88,7 +90,10 @@ public void OnMapStart()
 	{
 		g_bMVM = true;
 	}
+}
 
+public void OnConfigsExecuted()
+{
 	ReloadNames(0,0);
 }
 
@@ -163,6 +168,19 @@ Action ReloadNames(int client, int args)
 		g_iNamesArraySize = GetArraySize(g_hSelectedNamesArray);
 	}
 
+	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVRenameOnReload) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	{
+		return Plugin_Handled;
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsPlayerHere(i))
+		{
+			RenameClient(i);
+		}
+	}
+
 	return Plugin_Handled;
 }
 
@@ -176,7 +194,7 @@ void RandomizeNames()
 	}
 }
 
-void RenameBot(int client)
+void RenameClient(int client)
 {
 	if ((g_hSelectedNamesArray == null) || (g_iNamesArraySize < 1))
 	{
@@ -215,7 +233,7 @@ void RenameBot(int client)
 	strcopy(currentName, sizeof(newName), newName);
 	int playersWithThisName = 0;
 
-	while(IsNameInUse(newName))
+	while (IsNameInUse(newName))
 	{
 		playersWithThisName++;
 		Format(newName, sizeof(newName), "(%i)%s", playersWithThisName, currentName);
@@ -294,20 +312,20 @@ void BotRenameFrame(int userId)
 	{
 		case 1:
 		{
-			RenameBot(client);
+			RenameClient(client);
 		}
 		case 2:
 		{
 			if (team == 2)
 			{
-				RenameBot(client);
+				RenameClient(client);
 			}
 		}
 		case 3:
 		{
 			if (team == 3)
 			{
-				RenameBot(client);
+				RenameClient(client);
 			}
 		}
 	}
