@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.01"
+#define PLUGIN_VERSION "1.02"
 
 bool g_bMVM = false;
 int g_iNamesArraySize = 0;
@@ -18,6 +18,7 @@ ConVar g_hCVSuffix;
 ConVar g_hCVRandomize;
 ConVar g_hCVEnforceNameChange;
 ConVar g_hCVRenameOnReload;
+ConVar g_hCVSuppressNameChangeText;
 Handle g_hOrderedNamesArray;
 Handle g_hRandomizedNamesArray;
 Handle g_hSelectedNamesArray;
@@ -26,7 +27,7 @@ public Plugin myinfo =
 {
 	name = "Give Bots Names",
 	author = "luki1412",
-	description = "Gives TF2 bots names",
+	description = "Gives TF2 bots custom names",
 	version = PLUGIN_VERSION,
 	url = "https://forums.alliedmods.net/member.php?u=43109"
 }
@@ -50,18 +51,27 @@ public void OnPluginStart()
 	g_hCVMVMSupport = CreateConVar("sm_gbn_mvm", "0", "Enables/disables giving bots names when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVPrefix = CreateConVar("sm_gbn_prefix", "", "Prefix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
 	g_hCVSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
-	g_hCVRandomize = CreateConVar("sm_gbn_randomize", "1", "Randomize names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enforce names by catching name changes. Performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Checks and renames all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVRandomize = CreateConVar("sm_gbn_randomize", "1", "Enables/disables randomizing names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enables/disables enforcing names by catching name changes. This has a performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Enables disables checking and renaming all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVSuppressNameChangeText = CreateConVar("sm_gbn_suppressnamechangetext", "1", "Enables/disables suppressing chat text when bots are renamed.", FCVAR_NONE, true, 0.0, true, 1.0);
     RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
 
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
-
 	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Names");
-
 	BuildPath(Path_SM, g_sNamesFilePath, sizeof(g_sNamesFilePath), "configs/GiveBotsNames.txt");
+	UserMsg SayText2 = GetUserMessageId("SayText2");
+
+	if (SayText2 == INVALID_MESSAGE_ID)
+	{
+		LogError("This game doesn't support SayText2. Unable to suppress chat messages.");
+	}
+	else 
+	{
+		HookUserMessage(SayText2, UserMessage_SayText2, true);
+	}
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -95,6 +105,41 @@ public void OnMapStart()
 public void OnConfigsExecuted()
 {
 	ReloadNames(0,0);
+}
+
+public Action UserMessage_SayText2(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
+{
+	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVSuppressNameChangeText))
+	{
+		return Plugin_Continue;
+	}
+
+	char message[256];
+	BfReadShort(bf);
+	BfReadString(bf, message, sizeof(message));
+
+	if (StrContains(message, "Name_Change") != -1)
+	{
+		BfReadString(bf, message, sizeof(message));
+
+		for (int i = 1; i <= MaxClients; i++)
+		{
+			if (!IsPlayerHere(i))
+			{
+				continue;
+			}
+			
+			char currentName[MAX_NAME_LENGTH];
+			GetClientName(i, currentName, sizeof(currentName));
+
+			if (StrEqual(message, currentName))
+			{
+				return Plugin_Handled;
+			}
+		}
+	}
+
+	return Plugin_Continue;
 }
 
 Action ReloadNames(int client, int args)
