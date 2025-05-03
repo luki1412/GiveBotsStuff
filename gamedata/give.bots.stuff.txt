@@ -7,22 +7,22 @@
 		{
 			"WeaponEquip"
 			{
-				"windows"	"271"
-				"windows64"	"271"
-				"linux"		"272"
-				"linux64"	"272"
-				"mac"		"272"
-				"mac64"		"272"
+				"windows"	"272"
+				"windows64"	"272"
+				"linux"		"273"
+				"linux64"	"273"
+				"mac"		"273"
+				"mac64"		"273"
 			}
 			
 			"EquipWearable"
 			{
-				"windows"	"438"
-				"windows64"	"438"
-				"linux"		"439"
-				"linux64"	"439"
-				"mac"		"439"
-				"mac64"		"439"
+				"windows"	"439"
+				"windows64"	"439"
+				"linux"		"440"
+				"linux64"	"440"
+				"mac"		"440"
+				"mac64"		"440"
 			}
 		}
 	}
