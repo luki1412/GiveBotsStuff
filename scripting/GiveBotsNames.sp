@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.03"
+#define PLUGIN_VERSION "1.04"
 
 bool g_bMVM = false;
 int g_iNamesArraySize = 0;
@@ -19,10 +19,11 @@ ConVar g_hCVRandomize;
 ConVar g_hCVEnforceNameChange;
 ConVar g_hCVRenameOnReload;
 ConVar g_hCVSuppressNameChangeText;
+ConVar g_hCVSuppressJoinText;
+ConVar g_hCVSuppressConnectText;
 Handle g_hOrderedNamesArray;
 Handle g_hRandomizedNamesArray;
 Handle g_hSelectedNamesArray;
-UserMsg g_umSayText2;
 
 public Plugin myinfo =
 {
@@ -54,12 +55,12 @@ public void OnPluginStart()
 	g_hCVSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
 	g_hCVRandomize = CreateConVar("sm_gbn_randomizename", "1", "Enables/disables randomizing names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enables/disables enforcing names by catching name changes. This has a performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Enables disables checking and renaming all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Enables/disables checking and renaming all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVSuppressNameChangeText = CreateConVar("sm_gbn_suppressnamechangetext", "1", "Enables/disables suppressing chat text when bots are renamed.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVSuppressJoinText = CreateConVar("sm_gbn_suppressjointeamtext", "1", "Enables/disables suppressing chat text when bots are joining a team.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVSuppressConnectText = CreateConVar("sm_gbn_suppressjoingametext", "1", "Enables/disables suppressing chat text when bots are joining the game.", FCVAR_NONE, true, 0.0, true, 1.0);
     RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
-
 	BuildPath(Path_SM, g_sNamesFilePath, sizeof(g_sNamesFilePath), "configs/GiveBotsNames.txt");
-	g_umSayText2 = GetUserMessageId("SayText2");
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
 	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
@@ -70,27 +71,17 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 {
 	if (GetConVarBool(g_hCVEnabled))
 	{
+		HookUserMessage(GetUserMessageId("SayText2"), UserMessageSayText2, true, INVALID_FUNCTION);
 		HookEvent("player_changename", Event_PlayerChangename);
-		HookEvent("player_team", Event_PlayerTeam);
-
-		if (g_umSayText2 == INVALID_MESSAGE_ID)
-		{
-			LogError("This game doesn't support SayText2. Unable to suppress chat messages.");
-		}
-		else 
-		{
-			HookUserMessage(g_umSayText2, UserMessage_SayText2, true);
-		}
+		HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
+		HookEvent("player_connect_client", Event_PlayerConnect, EventHookMode_Pre);
 	}
 	else
 	{
+		UnhookUserMessage(GetUserMessageId("SayText2"), UserMessageSayText2, true);
 		UnhookEvent("player_changename", Event_PlayerChangename);
-		UnhookEvent("player_team", Event_PlayerTeam);
-
-		if (g_umSayText2 != INVALID_MESSAGE_ID)
-		{
-			UnhookUserMessage(g_umSayText2, UserMessage_SayText2, true);
-		}
+		UnhookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
+		UnhookEvent("player_connect_client", Event_PlayerConnect, EventHookMode_Pre);
 	}
 }
 
@@ -110,41 +101,6 @@ public void OnMapStart()
 public void OnConfigsExecuted()
 {
 	ReloadNames(0,0);
-}
-
-public Action UserMessage_SayText2(UserMsg msg_id, Handle bf, const int[] players, int playersNum, bool reliable, bool init)
-{
-	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVSuppressNameChangeText))
-	{
-		return Plugin_Continue;
-	}
-
-	char message[256];
-	BfReadShort(bf);
-	BfReadString(bf, message, sizeof(message));
-
-	if (StrContains(message, "Name_Change") != -1)
-	{
-		BfReadString(bf, message, sizeof(message));
-
-		for (int i = 1; i <= MaxClients; i++)
-		{
-			if (!IsPlayerHere(i))
-			{
-				continue;
-			}
-			
-			char currentName[MAX_NAME_LENGTH];
-			GetClientName(i, currentName, sizeof(currentName));
-
-			if (StrEqual(message, currentName))
-			{
-				return Plugin_Handled;
-			}
-		}
-	}
-
-	return Plugin_Continue;
 }
 
 Action ReloadNames(int client, int args)
@@ -322,16 +278,34 @@ void PullNextName(char[] nextName)
 	}
 }
 
-public void Event_PlayerTeam(Handle event, const char[] name, bool dontBroadcast)
+public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !(GetConVarBool(g_hCVSuppressConnectText)) || (GetEventBool(event,"bot") != true))
 	{
-		return;
+		return Plugin_Continue;
+	}
+
+	SetEventBroadcast(event, true);
+	return Plugin_Continue;
+}
+
+public Action Event_PlayerTeam(Handle event, const char[] name, bool dontBroadcast)
+{
+	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !(GetConVarBool(g_hCVSuppressJoinText)))
+	{
+		return Plugin_Continue;
 	}
 
 	int userId = GetEventInt(event, "userid");
-	RequestFrame(BotRenameFrame, userId);
-	return;
+	int client = GetClientOfUserId(userId);
+
+	if (IsPlayerHere(client))
+	{
+		SetEventBroadcast(event, true);	
+		RequestFrame(BotRenameFrame, userId);
+	}
+
+	return Plugin_Continue;
 }
 
 public void Event_PlayerChangename(Handle event, const char[] name, bool dontBroadcast)
@@ -344,6 +318,25 @@ public void Event_PlayerChangename(Handle event, const char[] name, bool dontBro
 	int userId = GetEventInt(event, "userid");
 	RequestFrame(BotRenameFrame, userId);
 	return;
+}
+
+public Action UserMessageSayText2(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
+{
+	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVSuppressNameChangeText) || !reliable || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	{
+		return Plugin_Continue;
+	}
+
+	char message[256];
+	int client = BfReadShort(bf);
+	BfReadString(bf, message, sizeof(message));
+
+	if (StrEqual(message, "#TF_Name_Change") && IsPlayerHere(client))
+	{
+		return Plugin_Handled;
+	}
+
+	return Plugin_Continue;
 }
 
 void BotRenameFrame(int userId)
