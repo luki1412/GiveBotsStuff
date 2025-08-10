@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.04"
+#define PLUGIN_VERSION "1.05"
 
 bool g_bMVM = false;
 int g_iNamesArraySize = 0;
@@ -38,7 +38,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	if (GetEngineVersion() != Engine_TF2)
 	{
-		Format(error, err_max, "This plugin only works for Team Fortress 2.");
+		FormatEx(error, err_max, "This plugin only works for Team Fortress 2.");
 		return APLRes_Failure;
 	}
 
@@ -154,7 +154,7 @@ Action ReloadNames(int client, int args)
 			continue;
 		}
 
-		Format(combinedName, sizeof(combinedName), "%s%s%s", prefix, newName, suffix);
+		FormatEx(combinedName, sizeof(combinedName), "%s%s%s", prefix, newName, suffix);
 		PushArrayString(g_hOrderedNamesArray, combinedName);
 		PushArrayString(g_hRandomizedNamesArray, combinedName);
 	}
@@ -242,7 +242,7 @@ void RenameClient(int client)
 	while (IsNameInUse(newName))
 	{
 		playersWithThisName++;
-		Format(newName, sizeof(newName), "(%i)%s", playersWithThisName, currentName);
+		FormatEx(newName, sizeof(newName), "(%i)%s", playersWithThisName, currentName);
 	}
 
 	SetClientName(client, newName);
@@ -257,7 +257,7 @@ bool IsNameInUse(char[] name)
 			char currentName[MAX_NAME_LENGTH];
 			GetClientName(i, currentName, MAX_NAME_LENGTH);
 
-			if (StrEqual(currentName, name, false))
+			if (strcmp(currentName, name, false) == 0)
 			{
 				return true;
 			}
@@ -331,7 +331,7 @@ public Action UserMessageSayText2(UserMsg msg_id, BfRead bf, const int[] players
 	int client = BfReadShort(bf);
 	BfReadString(bf, message, sizeof(message));
 
-	if (StrEqual(message, "#TF_Name_Change") && IsPlayerHere(client))
+	if ((strcmp(message, "#TF_Name_Change") == 0) && IsPlayerHere(client))
 	{
 		return Plugin_Handled;
 	}

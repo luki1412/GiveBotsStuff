@@ -5,13 +5,14 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.43"
+#define PLUGIN_VERSION "1.44"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
 int g_iResourceEntity;
 int g_iAttackPressed[MAXPLAYERS+1];
 ConVar g_hCVTimer;
+ConVar g_hCVRandomizeTimer;
 ConVar g_hCVEnabled;
 ConVar g_hCVTeam;
 ConVar g_hCVMVMSupport;
@@ -33,7 +34,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	if (GetEngineVersion() != Engine_TF2)
 	{
-		Format(error, err_max, "This plugin only works for Team Fortress 2.");
+		FormatEx(error, err_max, "This plugin only works for Team Fortress 2.");
 		return APLRes_Failure;
 	}
 
@@ -44,7 +45,8 @@ public void OnPluginStart()
 {
 	ConVar hCVversioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	g_hCVEnabled = CreateConVar("sm_gbw_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTimer = CreateConVar("sm_gbw_delay", "0.1", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
+	g_hCVTimer = CreateConVar("sm_gbw_delay", "0.5", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
+	g_hCVRandomizeTimer = CreateConVar("sm_gbw_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbw_delay as the upper bound and 0.1 as the lower bound. sm_gbw_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	g_hCVMVMSupport = CreateConVar("sm_gbw_mvm", "0", "Enables/disables giving bots weapons when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Enables/disables removal of weapons dropped by bots from this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -390,6 +392,11 @@ public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 	int team = GetClientTeam(client);
 	int team2 = GetConVarInt(g_hCVTeam);
 	float timer = GetConVarFloat(g_hCVTimer);
+
+	if (timer > 0.1 && GetConVarBool(g_hCVRandomizeTimer))
+	{
+		timer = GetRandomUFloat(0.1, timer);
+	}
 
 	switch (team2)
 	{
@@ -1983,4 +1990,9 @@ bool IsPlayerHere(int client)
 int GetRandomUInt(int min, int max)
 {
 	return RoundToFloor(GetURandomFloat() * (max - min + 1)) + min;
+}
+
+float GetRandomUFloat(float min, float max)
+{
+	return ((GetURandomFloat() * (max - min + 0.01)) + min);
 }
