@@ -14,7 +14,7 @@
 				"mac"		"273"
 				"mac64"		"273"
 			}
-			
+
 			"EquipWearable"
 			{
 				"windows"	"439"
@@ -23,6 +23,26 @@
 				"linux64"	"440"
 				"mac"		"440"
 				"mac64"		"440"
+			}
+
+			"BuildingStartUpgrading"
+			{
+				"windows"   "384"
+				"windows64"	"384"
+				"linux"		"385"
+				"linux64"	"385"
+				"mac"		"385"
+				"mac64"		"385"
+			}
+
+			"MatchingTeleporter"
+			{
+				"windows"   "4"
+				"windows64"	"4"
+				"linux"		"4"
+				"linux64"	"4"
+				"mac"		"4"
+				"mac64"		"4"
 			}
 		}
 	}
