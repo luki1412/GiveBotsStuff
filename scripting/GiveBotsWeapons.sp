@@ -5,7 +5,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.44"
+#define PLUGIN_VERSION "1.45"
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -134,44 +134,28 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 		return;
 	}
 
-	int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-	int wep = GetPlayerWeaponSlot(victim, 0);
-	int wep3 = GetPlayerWeaponSlot(victim, 2);
-	int wepIndex, wepIndex3;
+	int curWeapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+	int curWeaponIndex = GetEntProp(curWeapon, Prop_Send, "m_iItemDefinitionIndex");
 
-	if (IsValidEntity(wep))
-	{
-		wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
-	}
-
-	if (IsValidEntity(wep3))
-	{
-		wepIndex3 = GetEntProp(wep3, Prop_Send, "m_iItemDefinitionIndex");
-	}
-
-	switch (wepIndex)
+	switch (curWeaponIndex)
 	{
 		case 594: // Phlogistinator
 		{
-			if ((wep == actwep) && (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0))
+			if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0)
 			{
 				FakeClientCommand(victim, "taunt");
 			}
 		}
-	}
-
-	switch (wepIndex3)
-	{
 		case 589:  // Eureka Effect
 		{
-			if ((wep3 == actwep) && (GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
+			if ((GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
 			{
 				FakeClientCommand(victim, "eureka_teleport 0");
 			}
 		}
 		case 304:  // Amputator
 		{
-			if ((wep3 == actwep) && (GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
+			if ((GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
 			{
 				FakeClientCommand(victim, "taunt");
 			}
@@ -190,50 +174,36 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 	if (buttons&IN_ATTACK)
 	{
-		int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-		int wep = GetPlayerWeaponSlot(victim, 0);
-		int wep2 = GetPlayerWeaponSlot(victim, 1);
-		int wep3 = GetPlayerWeaponSlot(victim, 2);
-		int wepIndex, wepIndex2, wepIndex3;
+		int curWeapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+		int curWeaponIndex = GetEntProp(curWeapon, Prop_Send, "m_iItemDefinitionIndex");
 
-		if (IsValidEntity(wep))
+		switch (curWeaponIndex)
 		{
-			wepIndex = GetEntProp(wep, Prop_Send, "m_iItemDefinitionIndex");
-		}
-
-		if (IsValidEntity(wep2))
-		{
-			wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
-		}
-
-		if (IsValidEntity(wep3))
-		{
-			wepIndex3 = GetEntProp(wep3, Prop_Send, "m_iItemDefinitionIndex");
-		}
-
-		switch (wepIndex)
-		{
-			case 448: // Soda Popper
+			case 998: // Vaccinator
 			{
-				if ((wep == actwep) && (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") == 100.0))
+				g_iAttackPressed[victim]++;
+
+				if (g_iAttackPressed[victim] > 210)
 				{
-					buttons ^= IN_ATTACK;
-					buttons |= IN_ATTACK2;
+					buttons |= IN_RELOAD;
+					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
 				}
 			}
-			case 752: // Hitman's Heatmaker
+			case 730: // Beggar's Bazooka
 			{
-				if ((wep == actwep) && (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0))
+				g_iAttackPressed[victim]++;
+
+				if (g_iAttackPressed[victim] > 1)
 				{
 					buttons ^= IN_ATTACK;
-					buttons |= IN_RELOAD;
+					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
 				}
 			}
 			case 441: // Cow Mangler 5000
 			{
-				if ((wep == actwep) && (GetEntPropFloat(wep, Prop_Send, "m_flEnergy") == 20.0) && (GetRandomUInt(1,2) == 1))
+				if ((GetEntPropFloat(curWeapon, Prop_Send, "m_flEnergy") == 20.0) && (GetURandomFloat() < 0.5))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -243,28 +213,35 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			case 996: // Loose Cannon
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep == actwep) && (g_iAttackPressed[victim] > 1))
+
+				if (g_iAttackPressed[victim] > 1)
 				{
 					buttons ^= IN_ATTACK;
 					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
 				}
 			}
-			case 730: // Beggar's Bazooka
+			case 448: // Soda Popper
 			{
-				if ((wep == actwep) && (GetEntProp(wep, Prop_Data, "m_iClip1") > 0))
+				if (GetEntPropFloat(victim, Prop_Send, "m_flHypeMeter") == 100.0)
 				{
 					buttons ^= IN_ATTACK;
+					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
 			}
-		}
-
-		switch (wepIndex2)
-		{
+			case 752: // Hitman's Heatmaker
+			{
+				if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0)
+				{
+					buttons ^= IN_ATTACK;
+					buttons |= IN_RELOAD;
+					return Plugin_Changed;
+				}
+			}
 			case 751: // Cleaner's Carabine
 			{
-				if ((wep2 == actwep) && (GetEntProp(wep, Prop_Data, "m_iClip1") > 18))
+				if (GetEntProp(curWeapon, Prop_Data, "m_iClip1") > 18)
 				{
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
@@ -272,31 +249,18 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 528: // Short Circuit
 			{
-				if ((wep2 == actwep) && (GetRandomUInt(1,3) == 1))
+				if (GetURandomFloat() < 0.3)
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
 			}
-			case 998: // Vaccinator
-			{
-				g_iAttackPressed[victim]++;
-				if ((wep2 == actwep) && (g_iAttackPressed[victim] > 200))
-				{
-					buttons |= IN_RELOAD;
-					g_iAttackPressed[victim] = 0;
-					return Plugin_Changed;
-				}
-			}
-		}
-
-		switch (wepIndex3)
-		{
 			case 44:  // Sandman
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 20))
+
+				if (g_iAttackPressed[victim] > 20)
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -307,7 +271,8 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			case 648: // Wrap Assassin
 			{
 				g_iAttackPressed[victim]++;
-				if ((wep3 == actwep) && (g_iAttackPressed[victim] > 15))
+
+				if (g_iAttackPressed[victim] > 15)
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -317,55 +282,17 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 		}
 	}
-	else if (buttons&IN_RELOAD)
+	else if (buttons&IN_FORWARD || buttons&IN_BACK)
 	{
-		int actwepa = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-		int wepa = GetPlayerWeaponSlot(victim, 0);
-		int wepIndexa;
+		int curWeapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+		int curWeaponIndex = GetEntProp(curWeapon, Prop_Send, "m_iItemDefinitionIndex");
 
-		if (IsValidEntity(wepa))
-		{
-			wepIndexa = GetEntProp(wepa, Prop_Send, "m_iItemDefinitionIndex");
-		}
-
-		switch (wepIndexa)
-		{
-			case 730: // Beggar's Bazooka
-			{
-				if (wepa == actwepa)
-				{
-					buttons ^= IN_RELOAD;
-
-					if (GetEntProp(wepa, Prop_Data, "m_iClip1") < 4)
-					{
-						buttons |= IN_ATTACK;
-					}
-
-					return Plugin_Changed;
-				}
-			}
-		}
-	}
-	else if (buttons&IN_FORWARD)
-	{
-		int actwep = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
-		int wep2 = GetPlayerWeaponSlot(victim, 2);
-		int wepIndex2;
-
-		if (IsValidEntity(wep2))
-		{
-			wepIndex2 = GetEntProp(wep2, Prop_Send, "m_iItemDefinitionIndex");
-		}
-
-		switch (wepIndex2)
+		switch (curWeaponIndex)
 		{
 			case 447:  // Disciplinary Action
 			{
-				if (wep2 == actwep)
-				{
-					buttons |= IN_ATTACK;
-					return Plugin_Changed;
-				}
+				buttons |= IN_ATTACK;
+				return Plugin_Changed;
 			}
 		}
 	}
@@ -1865,7 +1792,7 @@ public void OnDroppedWeaponSpawnPost(int entity)
 
 	if (accId == 1)
 	{
-		AcceptEntityInput(entity, "Kill");
+		RemoveEntity(entity);
 	}
 }
 
@@ -1899,7 +1826,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 	if (!DispatchSpawn(weapon))
 	{
 		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to spawn! Skipping.", classname, itemindex, weapon);
-		AcceptEntityInput(weapon, "Kill");
+		RemoveEntity(weapon);
 		return false;
 	}
 
@@ -1953,7 +1880,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 	if ((slot > -1) && !wearable && (GetPlayerWeaponSlot(client, slot) != weapon))
 	{
 		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to equip! This is probably caused by invalid gamedata.", classname, itemindex, weapon);
-		AcceptEntityInput(weapon, "Kill");
+		RemoveEntity(weapon);
 		return false;
 	}
 
