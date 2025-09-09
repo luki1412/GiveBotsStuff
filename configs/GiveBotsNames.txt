@@ -1,5 +1,5 @@
-; lines beginning with ; are ignored otherwise each like means one name
-; at least 1 character is required and starting and ending whitespace is trimmed
+; lines beginning with ; are ignored, otherwise each line means one name
+; at least 1 character is required and starting+ending whitespace is trimmed
 come to papa
 Gassy Man
 Rapper of the Forest
@@ -20,7 +20,7 @@ Aim Judge
 Steven Stevenson
 YouWillDie
 Airport Hobo
-ToySoldier 
+ToySoldier
 Your Mom
 Who's your daddy?!
 Pony Tony
@@ -35,7 +35,7 @@ Return-To-Sender
 Visual Prick
 blue grass
 SparkleFart
-MadMan 
+MadMan
 Riding the wind!
 No Good Names Left!
 Grand Moron
@@ -43,3 +43,6 @@ Jack Kass
 Hugh Jass
 Mike Hawk
 I'm in this for the hats
+I hate you too :)
+Artificial Killing Device
+Karen

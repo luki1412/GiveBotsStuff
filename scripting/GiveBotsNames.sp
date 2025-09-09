@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.05"
+#define PLUGIN_VERSION "1.06"
 
 bool g_bMVM = false;
 int g_iNamesArraySize = 0;
@@ -47,24 +47,25 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-	ConVar hCVversioncvar = CreateConVar("sm_gbn_version", PLUGIN_VERSION, "Give Bots Names version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	ConVar hCVVersioncvar = CreateConVar("sm_gbn_version", PLUGIN_VERSION, "Give Bots Names version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	g_hCVEnabled = CreateConVar("sm_gbn_enabled", "1", "Enables/disables this plugin.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTeam = CreateConVar("sm_gbn_team", "1", "Team whose players get renamed: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	g_hCVMVMSupport = CreateConVar("sm_gbn_mvm", "0", "Enables/disables giving bots names when MVM mode is enabled.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVPrefix = CreateConVar("sm_gbn_prefix", "", "Prefix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
 	g_hCVSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
-	g_hCVRandomize = CreateConVar("sm_gbn_randomizename", "1", "Enables/disables randomizing names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVRandomize = CreateConVar("sm_gbn_randomizenames", "1", "Enables/disables randomizing names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enables/disables enforcing names by catching name changes. This has a performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Enables/disables checking and renaming all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVSuppressNameChangeText = CreateConVar("sm_gbn_suppressnamechangetext", "1", "Enables/disables suppressing chat text when bots are renamed.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVSuppressJoinText = CreateConVar("sm_gbn_suppressjointeamtext", "1", "Enables/disables suppressing chat text when bots are joining a team.", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVSuppressConnectText = CreateConVar("sm_gbn_suppressjoingametext", "1", "Enables/disables suppressing chat text when bots are joining the game.", FCVAR_NONE, true, 0.0, true, 1.0);
-    RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
 	BuildPath(Path_SM, g_sNamesFilePath, sizeof(g_sNamesFilePath), "configs/GiveBotsNames.txt");
+	RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
-	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
+	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Names");
+	delete hCVVersioncvar;
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -103,7 +104,7 @@ public void OnConfigsExecuted()
 	ReloadNames(0,0);
 }
 
-Action ReloadNames(int client, int args)
+public Action ReloadNames(int client, int args)
 {
 	Handle file = OpenFile(g_sNamesFilePath, "r");
 
@@ -301,7 +302,7 @@ public Action Event_PlayerTeam(Handle event, const char[] name, bool dontBroadca
 
 	if (IsPlayerHere(client))
 	{
-		SetEventBroadcast(event, true);	
+		SetEventBroadcast(event, true);
 		RequestFrame(BotRenameFrame, userId);
 	}
 
@@ -349,9 +350,9 @@ void BotRenameFrame(int userId)
 	}
 
 	int team = GetClientTeam(client);
-	int team2 = GetConVarInt(g_hCVTeam);
+	int cvteam = GetConVarInt(g_hCVTeam);
 
-	switch (team2)
+	switch (cvteam)
 	{
 		case 1:
 		{
@@ -381,5 +382,5 @@ bool IsPlayerHere(int client)
 
 int GetRandomUInt(int min, int max)
 {
-	return RoundToFloor(GetURandomFloat() * (max - min + 1)) + min;
+	return (RoundToFloor(GetURandomFloat() * (max - min + 1)) + min);
 }
