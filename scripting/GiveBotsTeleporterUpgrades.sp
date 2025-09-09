@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.00"
+#define PLUGIN_VERSION "1.01"
 #define TELEPORTER_ENTRANCE 1
 #define TELEPORTER_EXIT 2
 
@@ -41,19 +41,17 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-	ConVar hCVversioncvar = CreateConVar("sm_gbtu_version", PLUGIN_VERSION, "Give Bots Teleporter Upgrades version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	ConVar hCVVersioncvar = CreateConVar("sm_gbtu_version", PLUGIN_VERSION, "Give Bots Teleporter Upgrades version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	g_hCVEnabled = CreateConVar("sm_gbtu_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTimer = CreateConVar("sm_gbtu_delay", "10.0", "Delay between upgrade attempts, starting when a bot teleporter is created", FCVAR_NONE, true, 1.0, true, 300.0);
 	g_hCVTeam = CreateConVar("sm_gbtu_team", "1", "Team to give teleport upgrades to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	g_hCVMVMSupport = CreateConVar("sm_gbtu_mvm", "0", "Enables/disables giving teleport upgrades when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVRequireMetal = CreateConVar("sm_gbtu_consumegmetal", "1", "Enables/disables consuming full metal amount, needed for a level upgrade, at the teleporter upgrade time. The teleporter is not upgraded until the bot has enough metal.", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVRequireMetal = CreateConVar("sm_gbtu_consumemetal", "1", "Enables/disables consuming full metal amount, needed for a level upgrade, at the teleporter upgrade time. The teleporter is not upgraded until the bot has enough metal.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
-
-	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
+	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Teleport_Upgrades");
-
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
 
 	if (!hGameConfig)
@@ -77,6 +75,7 @@ public void OnPluginStart()
 	}
 
 	delete hGameConfig;
+	delete hCVVersioncvar;
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -114,17 +113,17 @@ public void player_builtobject(Handle event, const char[] name, bool dontBroadca
 		return;
 	}
 
-	int objectid = GetEventInt(event,"index");
-	int objtype = GetEntProp(objectid, Prop_Send, "m_iObjectType");
+	int objectId = GetEventInt(event,"index");
+	int objectType = GetEntProp(objectId, Prop_Send, "m_iObjectType");
 
-	if (objtype != view_as<int>(TFObject_Teleporter))
+	if (objectType != view_as<int>(TFObject_Teleporter))
 	{
 		return;
 	}
 
-	int teletype = GetEntProp(objectid, Prop_Data, "m_iTeleportType");
+	int teleType = GetEntProp(objectId, Prop_Data, "m_iTeleportType");
 
-	if (teletype != TELEPORTER_ENTRANCE)
+	if (teleType != TELEPORTER_ENTRANCE)
 	{
 		return;
 	}
@@ -137,31 +136,31 @@ public void player_builtobject(Handle event, const char[] name, bool dontBroadca
 		return;
 	}
 
-	float timer = GetConVarFloat(g_hCVTimer);
+	float cvdelay = GetConVarFloat(g_hCVTimer);
 	int team = GetClientTeam(client);
-	int team2 = GetConVarInt(g_hCVTeam);
+	int cvteam = GetConVarInt(g_hCVTeam);
 
-	switch (team2)
+	switch (cvteam)
 	{
 		case 1:
 		{
-			g_hTeleportBuilt[client] = CreateTimer(timer, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-			g_iTeleportId[client] = EntIndexToEntRef(objectid);
+			g_hTeleportBuilt[client] = CreateTimer(cvdelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+			g_iTeleportId[client] = EntIndexToEntRef(objectId);
 		}
 		case 2:
 		{
 			if (team == 2)
 			{
-				g_hTeleportBuilt[client] = CreateTimer(timer, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-				g_iTeleportId[client] = EntIndexToEntRef(objectid);
+				g_hTeleportBuilt[client] = CreateTimer(cvdelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+				g_iTeleportId[client] = EntIndexToEntRef(objectId);
 			}
 		}
 		case 3:
 		{
 			if (team == 3)
 			{
-				g_hTeleportBuilt[client] = CreateTimer(timer, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-				g_iTeleportId[client] = EntIndexToEntRef(objectid);
+				g_hTeleportBuilt[client] = CreateTimer(cvdelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+				g_iTeleportId[client] = EntIndexToEntRef(objectId);
 			}
 		}
 	}
@@ -178,63 +177,62 @@ public Action Timer_UpgradeTeleporter(Handle timer, any data)
 		return Plugin_Stop;
 	}
 
-	int objectid = EntRefToEntIndex(g_iTeleportId[client]);
+	int objectId = EntRefToEntIndex(g_iTeleportId[client]);
 
-	if (!IsValidEntity(objectid) || objectid < 1)
+	if (!IsValidEntity(objectId) || objectId < 1)
 	{
 		g_hTeleportBuilt[client] = null;
 		g_iTeleportId[client] = 0;
 		return Plugin_Stop;
 	}
 
-	if (GetEntProp(objectid, Prop_Send, "m_bBuilding") == 1 || GetEntProp(objectid, Prop_Send, "m_bHasSapper") == 1 || GetEntProp(objectid, Prop_Send, "m_bCarried") == 1 || GetEntProp(objectid, Prop_Send, "m_bPlacing") == 1)
+	if (GetEntProp(objectId, Prop_Send, "m_bBuilding") == 1 || GetEntProp(objectId, Prop_Send, "m_bHasSapper") == 1 || GetEntProp(objectId, Prop_Send, "m_bCarried") == 1 || GetEntProp(objectId, Prop_Send, "m_bPlacing") == 1)
 	{
 		return Plugin_Continue;
 	}
 
-	int objectlevel = GetEntProp(objectid, Prop_Send, "m_iUpgradeLevel");
-	int matchingtele = GetMatchingTeleporter(objectid);
+	int objectLevel = GetEntProp(objectId, Prop_Send, "m_iUpgradeLevel");
+	int matchingTele = GetMatchingTeleporter(objectId);
 
-	if (objectlevel < 3)
+	if (objectLevel < 3)
 	{
 		if (GetConVarBool(g_hCVRequireMetal))
 		{
-			int clientsmetal = GetEntProp(client, Prop_Data, "m_iAmmo", 4, 3);
-			int metalspent = GetEntProp(objectid, Prop_Send, "m_iUpgradeMetal");
-			int metalrequired = GetEntProp(objectid, Prop_Send, "m_iUpgradeMetalRequired");
-			int metaltotake = metalrequired - metalspent;
+			int clientMetal = GetEntProp(client, Prop_Data, "m_iAmmo", 4, 3);
+			int metalSpent = GetEntProp(objectId, Prop_Send, "m_iUpgradeMetal");
+			int metalTotalRequired = GetEntProp(objectId, Prop_Send, "m_iUpgradeMetalRequired");
+			int metalCurrentlyRequired = metalTotalRequired - metalSpent;
 
-			if (clientsmetal >= metaltotake)
+			if (clientMetal >= metalCurrentlyRequired)
 			{
-				SetEntProp(client, Prop_Data, "m_iAmmo", (clientsmetal-metaltotake), 4, 3);
-				SetEntProp(objectid, Prop_Send, "m_iUpgradeMetal", 0);
-				SDKCall(g_hBuildingStartUpgrading, objectid);
+				SetEntProp(client, Prop_Data, "m_iAmmo", (clientMetal-metalCurrentlyRequired), 4, 3);
+				SetEntProp(objectId, Prop_Send, "m_iUpgradeMetal", 0);
+				SDKCall(g_hBuildingStartUpgrading, objectId);
 			}
 		}
 		else
 		{
-			SetEntProp(objectid, Prop_Send, "m_iUpgradeMetal", 0);
-			SDKCall(g_hBuildingStartUpgrading, objectid);
+			SDKCall(g_hBuildingStartUpgrading, objectId);
 		}
 	}
 
-	if (matchingtele > 0)
+	if (matchingTele > 0)
 	{
-		objectlevel = GetEntProp(objectid, Prop_Send, "m_iUpgradeLevel");
-		int matchedtelelevel = GetEntProp(matchingtele, Prop_Send, "m_iUpgradeLevel");
+		objectLevel = GetEntProp(objectId, Prop_Send, "m_iUpgradeLevel");
+		int matchedTeleLevel = GetEntProp(matchingTele, Prop_Send, "m_iUpgradeLevel");
 
-		if (matchedtelelevel != objectlevel && matchedtelelevel < 3 && GetEntProp(matchingtele, Prop_Send, "m_bHasSapper") != 1 && GetEntProp(matchingtele, Prop_Send, "m_bCarried") != 1 && GetEntProp(matchingtele, Prop_Send, "m_bPlacing") != 1)
+		if (matchedTeleLevel != objectLevel && matchedTeleLevel < 3 && GetEntProp(matchingTele, Prop_Send, "m_bHasSapper") != 1 && GetEntProp(matchingTele, Prop_Send, "m_bCarried") != 1 && GetEntProp(matchingTele, Prop_Send, "m_bPlacing") != 1)
 		{
-			SetEntProp(matchingtele, Prop_Send, "m_iUpgradeMetal", 0);
+			SetEntProp(matchingTele, Prop_Send, "m_iUpgradeMetal", 0);
 
-			if (GetEntProp(matchingtele, Prop_Send, "m_bBuilding") == 1)
+			if (GetEntProp(matchingTele, Prop_Send, "m_bBuilding") == 1)
 			{
-				SetEntProp(matchingtele, Prop_Send, "m_iUpgradeLevel",objectlevel);
-				SetEntProp(matchingtele, Prop_Send, "m_iHighestUpgradeLevel",objectlevel);
+				SetEntProp(matchingTele, Prop_Send, "m_iUpgradeLevel",objectLevel);
+				SetEntProp(matchingTele, Prop_Send, "m_iHighestUpgradeLevel",objectLevel);
 			}
 			else
 			{
-				SDKCall(g_hBuildingStartUpgrading, matchingtele);
+				SDKCall(g_hBuildingStartUpgrading, matchingTele);
 			}
 		}
 	}
@@ -249,12 +247,11 @@ public void object_removed(Handle event, const char[] name, bool dontBroadcast)
 		return;
 	}
 
-	int objectid = GetEventInt(event,"index");
-	int userId = GetEventInt(event,"userid");
-	int client = GetClientOfUserId(userId);
-	int storedobjtid = EntRefToEntIndex(g_iTeleportId[client]);
+	int objectId = GetEventInt(event, "index");
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int storedObjectId = EntRefToEntIndex(g_iTeleportId[client]);
 
-	if (storedobjtid == objectid)
+	if (storedObjectId == objectId)
 	{
 		g_iTeleportId[client] = 0;
 
