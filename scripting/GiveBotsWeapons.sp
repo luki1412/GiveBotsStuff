@@ -5,7 +5,9 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.45"
+#define PLUGIN_VERSION "1.47"
+#define COLLISION_GROUP_DEBRIS_TRIGGER 2
+#define EF_NODRAW 32
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -43,20 +45,18 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-	ConVar hCVversioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	ConVar hCVVersioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	g_hCVEnabled = CreateConVar("sm_gbw_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTimer = CreateConVar("sm_gbw_delay", "0.5", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
 	g_hCVRandomizeTimer = CreateConVar("sm_gbw_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbw_delay as the upper bound and 0.1 as the lower bound. sm_gbw_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
 	g_hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	g_hCVMVMSupport = CreateConVar("sm_gbw_mvm", "0", "Enables/disables giving bots weapons when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Enables/disables removal of weapons dropped by bots from this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
+	g_hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Specifies the removal type of dropped weapons, created by this plugin: 0-remove weapons near supply cabinets and in respawn rooms  1-remove weapons anywhere on the map", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	OnEnabledChanged(g_hCVEnabled, "", "");
 	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
-
-	SetConVarString(hCVversioncvar, PLUGIN_VERSION);
+	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Weapons");
-
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
 
 	if (!hGameConfig)
@@ -65,7 +65,12 @@ public void OnPluginStart()
 	}
 
 	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "WeaponEquip");
+
+	if (!PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "WeaponEquip"))
+	{
+		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
+	}
+
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
 	g_hWeaponEquip = EndPrepSDKCall();
 
@@ -75,7 +80,12 @@ public void OnPluginStart()
 	}
 
 	StartPrepSDKCall(SDKCall_Player);
-	PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "EquipWearable");
+
+	if (!PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "EquipWearable"))
+	{
+		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
+	}
+
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
 	g_hWWeaponEquip = EndPrepSDKCall();
 
@@ -85,6 +95,15 @@ public void OnPluginStart()
 	}
 
 	delete hGameConfig;
+	delete hCVVersioncvar;
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientInGame(i) && IsFakeClient(i))
+		{
+			SDKHook(i, SDKHook_OnTakeDamageAlivePost, OnTakeDamageAlivePost);
+		}
+	}
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -94,14 +113,12 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 		HookEvent("post_inventory_application", player_inv);
 		HookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		HookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
-		HookEvent("player_hurt", player_hurt);
 	}
 	else
 	{
 		UnhookEvent("post_inventory_application", player_inv);
 		UnhookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		UnhookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
-		UnhookEvent("player_hurt", player_hurt);
 	}
 }
 
@@ -113,6 +130,8 @@ public void OnMapStart()
 	}
 
 	g_iResourceEntity = GetPlayerResourceEntity();
+	HookEntities("func_regenerate");
+	HookEntities("func_respawnroom");
 }
 
 public void OnClientDisconnect(int client)
@@ -120,44 +139,51 @@ public void OnClientDisconnect(int client)
 	delete g_hTouched[client];
 }
 
-public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
+public void OnClientPutInServer(int client)
 {
-	if (!GetConVarBool(g_hCVEnabled))
+	if (IsFakeClient(client))
 	{
-		return;
+		SDKHook(client, SDKHook_OnTakeDamageAlivePost, OnTakeDamageAlivePost);
 	}
+}
 
-	int victim = GetClientOfUserId(GetEventInt(event, "userid"));
-
-	if (!IsPlayerHere(victim))
+public void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float damage, int damagetype)
+{
+	if (!GetConVarBool(g_hCVEnabled) && !IsPlayerHere(victim))
 	{
 		return;
 	}
 
 	int curWeapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+	if (!IsValidEntity(curWeapon))
+	{
+		return;
+	}
+
 	int curWeaponIndex = GetEntProp(curWeapon, Prop_Send, "m_iItemDefinitionIndex");
 
 	switch (curWeaponIndex)
 	{
+		case 304:  // Amputator
+		{
+			if ((GetClientHealth(victim) < 70) && (GetURandomFloat() < 0.4))
+			{
+				FakeClientCommand(victim, "taunt");
+			}
+		}
 		case 594: // Phlogistinator
 		{
-			if (GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0)
+			if ((GetEntPropFloat(victim, Prop_Send, "m_flRageMeter") == 100.0) && (GetURandomFloat() < 0.5))
 			{
 				FakeClientCommand(victim, "taunt");
 			}
 		}
 		case 589:  // Eureka Effect
 		{
-			if ((GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
+			if ((GetClientHealth(victim) < 70) && (GetURandomFloat() < 0.4))
 			{
 				FakeClientCommand(victim, "eureka_teleport 0");
-			}
-		}
-		case 304:  // Amputator
-		{
-			if ((GetClientHealth(victim) < 60) && (GetRandomUInt(1,2) == 1))
-			{
-				FakeClientCommand(victim, "taunt");
 			}
 		}
 	}
@@ -167,7 +193,7 @@ public void player_hurt(Handle event, const char[] name, bool dontBroadcast)
 
 public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2])
 {
-	if (!GetConVarBool(g_hCVEnabled) || !IsPlayerHere(victim) || !IsPlayerAlive(victim))
+	if (!GetConVarBool(g_hCVEnabled) || !IsPlayerHere(victim))
 	{
 		return Plugin_Continue;
 	}
@@ -175,6 +201,12 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 	if (buttons&IN_ATTACK)
 	{
 		int curWeapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+		if (!IsValidEntity(curWeapon))
+		{
+			return Plugin_Continue;
+		}
+
 		int curWeaponIndex = GetEntProp(curWeapon, Prop_Send, "m_iItemDefinitionIndex");
 
 		switch (curWeaponIndex)
@@ -183,8 +215,9 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			{
 				g_iAttackPressed[victim]++;
 
-				if (g_iAttackPressed[victim] > 210)
+				if (g_iAttackPressed[victim] > 250)
 				{
+					buttons ^= IN_ATTACK;
 					buttons |= IN_RELOAD;
 					g_iAttackPressed[victim] = 0;
 					return Plugin_Changed;
@@ -203,7 +236,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 441: // Cow Mangler 5000
 			{
-				if ((GetEntPropFloat(curWeapon, Prop_Send, "m_flEnergy") == 20.0) && (GetURandomFloat() < 0.5))
+				if ((GetEntPropFloat(curWeapon, Prop_Send, "m_flEnergy") == 20.0) && (GetURandomFloat() < 0.4))
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -243,6 +276,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			{
 				if (GetEntProp(curWeapon, Prop_Data, "m_iClip1") > 18)
 				{
+					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
@@ -282,16 +316,28 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 		}
 	}
-	else if (buttons&IN_FORWARD || buttons&IN_BACK)
+	else if (buttons&IN_RELOAD)
 	{
 		int curWeapon = GetEntPropEnt(victim, Prop_Send, "m_hActiveWeapon");
+
+		if (!IsValidEntity(curWeapon))
+		{
+			return Plugin_Continue;
+		}
+
 		int curWeaponIndex = GetEntProp(curWeapon, Prop_Send, "m_iItemDefinitionIndex");
 
 		switch (curWeaponIndex)
 		{
-			case 447:  // Disciplinary Action
+			case 730: // Beggar's Bazooka
 			{
-				buttons |= IN_ATTACK;
+				buttons ^= IN_RELOAD;
+
+				if (GetEntProp(curWeapon, Prop_Data, "m_iClip1") < 4)
+				{
+					buttons |= IN_ATTACK;
+				}
+
 				return Plugin_Changed;
 			}
 		}
@@ -307,8 +353,8 @@ public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 		return;
 	}
 
-	int userd = GetEventInt(event, "userid");
-	int client = GetClientOfUserId(userd);
+	int userid = GetEventInt(event, "userid");
+	int client = GetClientOfUserId(userid);
 	delete g_hTouched[client];
 
 	if (!IsPlayerHere(client))
@@ -317,32 +363,32 @@ public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 	}
 
 	int team = GetClientTeam(client);
-	int team2 = GetConVarInt(g_hCVTeam);
-	float timer = GetConVarFloat(g_hCVTimer);
+	int cvteam = GetConVarInt(g_hCVTeam);
+	float cvdelay = GetConVarFloat(g_hCVTimer);
 
-	if (timer > 0.1 && GetConVarBool(g_hCVRandomizeTimer))
+	if ((cvdelay > 0.1) && GetConVarBool(g_hCVRandomizeTimer))
 	{
-		timer = GetRandomUFloat(0.1, timer);
+		cvdelay = GetRandomUFloat(0.1, cvdelay);
 	}
 
-	switch (team2)
+	switch (cvteam)
 	{
 		case 1:
 		{
-			g_hTouched[client] = CreateTimer(timer, Timer_GiveWeapons, userd, TIMER_FLAG_NO_MAPCHANGE);
+			g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
 		}
 		case 2:
 		{
 			if (team == 2)
 			{
-				g_hTouched[client] = CreateTimer(timer, Timer_GiveWeapons, userd, TIMER_FLAG_NO_MAPCHANGE);
+				g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 		case 3:
 		{
 			if (team == 3)
 			{
-				g_hTouched[client] = CreateTimer(timer, Timer_GiveWeapons, userd, TIMER_FLAG_NO_MAPCHANGE);
+				g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
 			}
 		}
 	}
@@ -359,9 +405,9 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 	}
 
 	int team = GetClientTeam(client);
-	int team2 = GetConVarInt(g_hCVTeam);
+	int cvteam = GetConVarInt(g_hCVTeam);
 
-	switch (team2)
+	switch (cvteam)
 	{
 		case 2:
 		{
@@ -1774,25 +1820,57 @@ public void EventSuddenDeath(Handle event, const char[] name, bool dontBroadcast
 public void EventRoundReset(Handle event, const char[] name, bool dontBroadcast)
 {
 	g_bSuddenDeathMode = false;
+	HookEntities("func_respawnroom");
+}
+
+void HookEntities(const char[] classname)
+{
+	int targetEntity = g_iResourceEntity+1;
+
+	while ((targetEntity = FindEntityByClassname(targetEntity, classname)) != -1)
+	{
+		SDKHook(targetEntity, SDKHook_StartTouch, OnStartTouchEntity);
+	}
 }
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (GetConVarBool(g_hCVEnabled) && GetConVarBool(g_hCVDroppedWeaponRemoval) && classname[0] == 't' && StrEqual(classname, "tf_dropped_weapon", false))
+	if (GetConVarBool(g_hCVEnabled) && (entity > MaxClients) && classname[0] == 't' && (strcmp(classname, "tf_dropped_weapon", false) == 0))
 	{
 		SDKHook(entity, SDKHook_SpawnPost, OnDroppedWeaponSpawnPost);
 	}
 }
 
+public Action OnStartTouchEntity(int entity, int other)
+{
+	char classname[64];
+
+	if ((other > MaxClients) && GetEntityClassname(other,classname,sizeof(classname)) && classname[0] == 't' && (strcmp(classname, "tf_dropped_weapon", false) == 0) && (GetEntProp(other, Prop_Send, "m_iAccountID") == -1))
+	{
+		RemoveEntity(other);
+	}
+
+	return Plugin_Continue;
+}
+
 public void OnDroppedWeaponSpawnPost(int entity)
 {
-	char entclass[64];
-	GetEntityNetClass(entity, entclass, sizeof(entclass));
-	int accId = GetEntData(entity, FindSendPropInfo(entclass, "m_iAccountID"));
-
-	if (accId == 1)
+	if (GetEntProp(entity, Prop_Send, "m_iAccountID") == -1)
 	{
-		RemoveEntity(entity);
+		if (GetConVarBool(g_hCVDroppedWeaponRemoval))
+		{
+			SetEntProp(entity, Prop_Send, "m_fEffects", EF_NODRAW);
+			RemoveEntity(entity);
+		}
+		else
+		{
+			SetEntProp(entity, Prop_Send, "m_CollisionGroup", COLLISION_GROUP_DEBRIS_TRIGGER);
+
+			if (GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex") == 947) // Quackenbirdt
+			{
+				SetEntProp(entity, Prop_Send, "m_fEffects", EF_NODRAW);
+			}
+		}
 	}
 }
 
@@ -1809,47 +1887,32 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 	char entclass[64];
 	GetEntityNetClass(weapon, entclass, sizeof(entclass));
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_iItemDefinitionIndex"), itemindex);
-	SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
-	SetEntData(weapon, FindSendPropInfo(entclass, "m_iAccountID"), 1);
-
-	if (level)
-	{
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), level);
-	}
-	else
-	{
-		SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), GetRandomUInt(1,99));
-	}
-
 	SetEntData(weapon, FindSendPropInfo(entclass, "m_bInitialized"), 1);
-
-	if (!DispatchSpawn(weapon))
-	{
-		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to spawn! Skipping.", classname, itemindex, weapon);
-		RemoveEntity(weapon);
-		return false;
-	}
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityQuality"), 6);
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_iAccountID"), -1);
+	SetEntData(weapon, FindSendPropInfo(entclass, "m_iEntityLevel"), (level ? level : GetRandomUInt(1,99)));
 
 	switch (itemindex)
 	{
 		case 810: // Red-Tape Recorder
 		{
 			SetEntData(weapon, FindSendPropInfo(entclass, "m_iObjectType"), 3);
+			SetEntData(weapon, FindSendPropInfo(entclass, "m_iObjectMode"), 0);
 			SetEntData(weapon, FindDataMapInfo(weapon, "m_iSubType"), 3);
-			int buildables[4] = {0,0,0,1};
-			SetEntDataArray(weapon, FindSendPropInfo(entclass, "m_aBuildableObjectTypes"), buildables, 4);
+			SetEntDataArray(weapon, FindSendPropInfo(entclass, "m_aBuildableObjectTypes"), {0,0,0,1}, 4);
 		}
 		case 998: // Vaccinator
 		{
 			int resistType = GetRandomUInt(0,4);
 
-			if (resistType > 2) {
+			if (resistType > 2)
+			{
 				resistType = 0;
 			}
 
 			SetEntData(weapon, FindSendPropInfo(entclass, "m_nChargeResistType"), resistType);
 		}
-		case 1178:
+		case 1178: // The Dragon's Fury
 		{
 			int iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
 			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
@@ -1861,6 +1924,13 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 			int iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
 			SetEntData(client, iAmmoTable+iOffset, 16, 4);
 		}
+	}
+
+	if (!DispatchSpawn(weapon))
+	{
+		LogError("The created weapon entity [Class name: %s, Item index: %i, Index: %i], failed to spawn! Skipping.", classname, itemindex, weapon);
+		RemoveEntity(weapon);
+		return false;
 	}
 
 	if (slot > -1)
@@ -1901,12 +1971,7 @@ public Action TimerHealth(Handle timer, any client)
 
 int GetPlayerMaxHp(int client)
 {
-	if (!IsClientInGame(client) || g_iResourceEntity == -1)
-	{
-		return -1;
-	}
-
-	return GetEntProp(g_iResourceEntity, Prop_Send, "m_iMaxHealth", _, client);
+	return (!IsClientInGame(client) || g_iResourceEntity == -1 ? -1 : GetEntProp(g_iResourceEntity, Prop_Send, "m_iMaxHealth", _, client));
 }
 
 bool IsPlayerHere(int client)
@@ -1916,7 +1981,7 @@ bool IsPlayerHere(int client)
 
 int GetRandomUInt(int min, int max)
 {
-	return RoundToFloor(GetURandomFloat() * (max - min + 1)) + min;
+	return (RoundToFloor(GetURandomFloat() * (max - min + 1)) + min);
 }
 
 float GetRandomUFloat(float min, float max)
