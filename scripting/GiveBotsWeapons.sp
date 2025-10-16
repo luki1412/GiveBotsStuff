@@ -5,20 +5,21 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.47"
+#define PLUGIN_VERSION "1.50"
 #define COLLISION_GROUP_DEBRIS_TRIGGER 2
 #define EF_NODRAW 32
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
+bool g_bCVEnabled;
+bool g_bCVMVMSupported;
+bool g_bCVExtraLogic;
+bool g_bCVDroppedWeaponRemoval;
+bool g_bCVRandomizeDelay;
 int g_iResourceEntity;
 int g_iAttackPressed[MAXPLAYERS+1];
-ConVar g_hCVTimer;
-ConVar g_hCVRandomizeTimer;
-ConVar g_hCVEnabled;
-ConVar g_hCVTeam;
-ConVar g_hCVMVMSupport;
-ConVar g_hCVDroppedWeaponRemoval;
+int g_iCVTeam;
+float g_fCVDelay;
 Handle g_hWeaponEquip;
 Handle g_hWWeaponEquip;
 Handle g_hTouched[MAXPLAYERS+1];
@@ -46,15 +47,28 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	ConVar hCVVersioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
-	g_hCVEnabled = CreateConVar("sm_gbw_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTimer = CreateConVar("sm_gbw_delay", "0.5", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
-	g_hCVRandomizeTimer = CreateConVar("sm_gbw_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbw_delay as the upper bound and 0.1 as the lower bound. sm_gbw_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
-	g_hCVMVMSupport = CreateConVar("sm_gbw_mvm", "0", "Enables/disables giving bots weapons when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Specifies the removal type of dropped weapons, created by this plugin: 0-remove weapons near supply cabinets and in respawn rooms  1-remove weapons anywhere on the map", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVEnabled = CreateConVar("sm_gbw_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVDelay = CreateConVar("sm_gbw_delay", "0.5", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
+	ConVar hCVRandomizeDelay = CreateConVar("sm_gbw_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbw_delay as the upper bound and 0.1 as the lower bound. sm_gbw_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
+	ConVar hCVMVMSupported = CreateConVar("sm_gbw_mvm", "0", "Enables/disables giving bots weapons when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Specifies the removal type of dropped weapons, created by this plugin: 0-remove weapons near supply cabinets and in respawn rooms  1-remove weapons anywhere on the map", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVExtraWeaponLogic = CreateConVar("sm_gbw_extraweaponlogic", "1", "Enables/disables extra logic for certain weapons. Some weapons require this, others are just improvemd. Performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	OnEnabledChanged(g_hCVEnabled, "", "");
-	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
+	OnEnabledChanged(hCVEnabled, "", "");
+	HookConVarChange(hCVEnabled, OnEnabledChanged);
+	OnDroppedWeaponRemovalChanged(hCVDroppedWeaponRemoval, "", "");
+	HookConVarChange(hCVDroppedWeaponRemoval, OnDroppedWeaponRemovalChanged);
+	OnExtraLogicChanged(hCVExtraWeaponLogic, "", "");
+	HookConVarChange(hCVExtraWeaponLogic, OnExtraLogicChanged);
+	OnMVMSupportedChanged(hCVMVMSupported, "", "");
+	HookConVarChange(hCVMVMSupported, OnMVMSupportedChanged);
+	OnRandomizeDelayChanged(hCVRandomizeDelay, "", "");
+	HookConVarChange(hCVRandomizeDelay, OnRandomizeDelayChanged);
+	OnDelayChanged(hCVDelay, "", "");
+	HookConVarChange(hCVDelay, OnDelayChanged);
+	OnTeamChanged(hCVTeam, "", "");
+	HookConVarChange(hCVTeam, OnTeamChanged);
 	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Weapons");
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
@@ -83,7 +97,7 @@ public void OnPluginStart()
 
 	if (!PrepSDKCall_SetFromConf(hGameConfig, SDKConf_Virtual, "EquipWearable"))
 	{
-		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
+		SetFailState("Failed to prepare the SDKCall for giving wearable weapons. Try updating gamedata or restarting your server.");
 	}
 
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
@@ -91,11 +105,18 @@ public void OnPluginStart()
 
 	if (!g_hWWeaponEquip)
 	{
-		SetFailState("Failed to prepare the SDKCall for giving weapons. Try updating gamedata or restarting your server.");
+		SetFailState("Failed to prepare the SDKCall for giving wearable weapons. Try updating gamedata or restarting your server.");
 	}
 
 	delete hGameConfig;
 	delete hCVVersioncvar;
+	delete hCVEnabled;
+	delete hCVDelay;
+	delete hCVDroppedWeaponRemoval;
+	delete hCVExtraWeaponLogic;
+	delete hCVRandomizeDelay;
+	delete hCVTeam;
+	delete hCVMVMSupported;
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -108,18 +129,50 @@ public void OnPluginStart()
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (GetConVarBool(g_hCVEnabled))
+	if (GetConVarBool(convar))
 	{
+		g_bCVEnabled = true;
 		HookEvent("post_inventory_application", player_inv);
 		HookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		HookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
 	}
 	else
 	{
+		g_bCVEnabled = false;
 		UnhookEvent("post_inventory_application", player_inv);
 		UnhookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		UnhookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
 	}
+}
+
+public void OnExtraLogicChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVExtraLogic = GetConVarBool(convar);
+}
+
+public void OnDroppedWeaponRemovalChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVDroppedWeaponRemoval = GetConVarBool(convar);
+}
+
+public void OnMVMSupportedChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVMVMSupported = GetConVarBool(convar);
+}
+
+public void OnRandomizeDelayChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVRandomizeDelay = GetConVarBool(convar);
+}
+
+public void OnDelayChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_fCVDelay = GetConVarFloat(convar);
+}
+
+public void OnTeamChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_iCVTeam = GetConVarInt(convar);
 }
 
 public void OnMapStart()
@@ -149,7 +202,7 @@ public void OnClientPutInServer(int client)
 
 public void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float damage, int damagetype)
 {
-	if (!GetConVarBool(g_hCVEnabled) && !IsPlayerHere(victim))
+	if (!g_bCVEnabled || !g_bCVExtraLogic || !IsPlayerHere(victim))
 	{
 		return;
 	}
@@ -193,7 +246,7 @@ public void OnTakeDamageAlivePost(int victim, int attacker, int inflictor, float
 
 public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2])
 {
-	if (!GetConVarBool(g_hCVEnabled) || !IsPlayerHere(victim))
+	if (!g_bCVEnabled || !g_bCVExtraLogic || !IsPlayerHere(victim))
 	{
 		return Plugin_Continue;
 	}
@@ -262,6 +315,11 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 					buttons |= IN_ATTACK2;
 					return Plugin_Changed;
 				}
+				else if(TF2_IsPlayerInCondition(victim, TFCond_CritHype))
+				{
+					buttons |= IN_JUMP;
+					return Plugin_Changed;
+				}
 			}
 			case 752: // Hitman's Heatmaker
 			{
@@ -274,7 +332,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 			}
 			case 751: // Cleaner's Carabine
 			{
-				if (GetEntProp(curWeapon, Prop_Data, "m_iClip1") > 18)
+				if (GetEntPropFloat(curWeapon, Prop_Send, "m_flMinicritCharge") == 100.0)
 				{
 					buttons ^= IN_ATTACK;
 					buttons |= IN_ATTACK2;
@@ -314,6 +372,18 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 					return Plugin_Changed;
 				}
 			}
+			case 595,351: // Manmelter, Detonator
+			{
+				g_iAttackPressed[victim]++;
+
+				if ((g_iAttackPressed[victim] > 10) && (GetURandomFloat() < 0.3))
+				{
+					buttons ^= IN_ATTACK;
+					buttons |= IN_ATTACK2;
+					g_iAttackPressed[victim] = 0;
+					return Plugin_Changed;
+				}
+			}
 		}
 	}
 	else if (buttons&IN_RELOAD)
@@ -340,6 +410,12 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 				return Plugin_Changed;
 			}
+			case 595: // Manmelter
+			{
+				buttons ^= IN_RELOAD;
+				buttons |= IN_ATTACK2;
+				return Plugin_Changed;
+			}
 		}
 	}
 
@@ -348,7 +424,7 @@ public Action OnPlayerRunCmd(int victim, int& buttons, int& impulse, float vel[3
 
 public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || g_bSuddenDeathMode || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || g_bSuddenDeathMode || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return;
 	}
@@ -363,15 +439,14 @@ public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 	}
 
 	int team = GetClientTeam(client);
-	int cvteam = GetConVarInt(g_hCVTeam);
-	float cvdelay = GetConVarFloat(g_hCVTimer);
+	float cvdelay = g_fCVDelay;
 
-	if ((cvdelay > 0.1) && GetConVarBool(g_hCVRandomizeTimer))
+	if (g_bCVRandomizeDelay && (cvdelay > 0.1))
 	{
 		cvdelay = GetRandomUFloat(0.1, cvdelay);
 	}
 
-	switch (cvteam)
+	switch (g_iCVTeam)
 	{
 		case 1:
 		{
@@ -399,15 +474,14 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 	int client = GetClientOfUserId(data);
 	g_hTouched[client] = null;
 
-	if (!GetConVarBool(g_hCVEnabled) || g_bSuddenDeathMode || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !IsPlayerHere(client))
+	if (!g_bCVEnabled || g_bSuddenDeathMode || (g_bMVM && !g_bCVMVMSupported) || !IsPlayerHere(client))
 	{
 		return Plugin_Stop;
 	}
 
 	int team = GetClientTeam(client);
-	int cvteam = GetConVarInt(g_hCVTeam);
 
-	switch (cvteam)
+	switch (g_iCVTeam)
 	{
 		case 2:
 		{
@@ -1835,7 +1909,7 @@ void HookEntities(const char[] classname)
 
 public void OnEntityCreated(int entity, const char[] classname)
 {
-	if (GetConVarBool(g_hCVEnabled) && (entity > MaxClients) && classname[0] == 't' && (strcmp(classname, "tf_dropped_weapon", false) == 0))
+	if (g_bCVEnabled && (entity > MaxClients) && classname[0] == 't' && (strcmp(classname, "tf_dropped_weapon", false) == 0))
 	{
 		SDKHook(entity, SDKHook_SpawnPost, OnDroppedWeaponSpawnPost);
 	}
@@ -1857,7 +1931,7 @@ public void OnDroppedWeaponSpawnPost(int entity)
 {
 	if (GetEntProp(entity, Prop_Send, "m_iAccountID") == -1)
 	{
-		if (GetConVarBool(g_hCVDroppedWeaponRemoval))
+		if (g_bCVDroppedWeaponRemoval)
 		{
 			SetEntProp(entity, Prop_Send, "m_fEffects", EF_NODRAW);
 			RemoveEntity(entity);
@@ -1876,6 +1950,11 @@ public void OnDroppedWeaponSpawnPost(int entity)
 
 bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int level = 0, bool wearable = false)
 {
+	if (!g_bCVExtraLogic && (itemindex == 730 || itemindex == 966))
+	{
+		return false;
+	}
+
 	int weapon = CreateEntityByName(classname);
 
 	if (!IsValidEntity(weapon))
