@@ -53,7 +53,7 @@ public void OnPluginStart()
 	ConVar hCVTeam = CreateConVar("sm_gbw_team", "1", "Team to give weapons to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
 	ConVar hCVMVMSupported = CreateConVar("sm_gbw_mvm", "0", "Enables/disables giving bots weapons when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 	ConVar hCVDroppedWeaponRemoval = CreateConVar("sm_gbw_droppedweaponremoval", "0", "Specifies the removal type of dropped weapons, created by this plugin: 0-remove weapons near supply cabinets and in respawn rooms  1-remove weapons anywhere on the map", FCVAR_NONE, true, 0.0, true, 1.0);
-	ConVar hCVExtraWeaponLogic = CreateConVar("sm_gbw_extraweaponlogic", "1", "Enables/disables extra logic for certain weapons. Some weapons require this, others are just improvemd. Performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVExtraWeaponLogic = CreateConVar("sm_gbw_extraweaponlogic", "1", "Enables/disables extra logic for certain weapons. Some weapons require this, others are just improved. Performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
 
 	OnEnabledChanged(hCVEnabled, "", "");
 	HookConVarChange(hCVEnabled, OnEnabledChanged);
