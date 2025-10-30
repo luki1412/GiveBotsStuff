@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.06"
+#define PLUGIN_VERSION "1.07"
 
 bool g_bMVM = false;
 int g_iNamesArraySize = 0;
@@ -93,10 +93,7 @@ public void OnRandomizeChanged(ConVar convar, const char[] oldValue, const char[
 
 public void OnMapStart()
 {
-	if (GameRules_GetProp("m_bPlayingMannVsMachine"))
-	{
-		g_bMVM = true;
-	}
+	g_bMVM = GameRules_GetProp("m_bPlayingMannVsMachine") ? true : false;
 }
 
 public void OnConfigsExecuted()

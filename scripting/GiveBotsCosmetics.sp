@@ -4,14 +4,14 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.47"
+#define PLUGIN_VERSION "1.50"
 
 bool g_bMVM;
-ConVar g_hCVTimer;
-ConVar g_hCVRandomizeTimer;
-ConVar g_hCVEnabled;
-ConVar g_hCVTeam;
-ConVar g_hCVMVMSupport;
+bool g_bCVEnabled;
+bool g_bCVMVMSupported;
+bool g_bCVRandomizeDelay;
+int g_iCVTeam;
+float g_fCVDelay;
 Handle g_hWearableEquip;
 Handle g_hTouched[MAXPLAYERS+1];
 
@@ -38,14 +38,22 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	ConVar hCVVersioncvar = CreateConVar("sm_gbc_version", PLUGIN_VERSION, "Give Bots Cosmetics version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
-	g_hCVEnabled = CreateConVar("sm_gbc_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTimer = CreateConVar("sm_gbc_delay", "0.5", "Delay for giving cosmetics to bots", FCVAR_NONE, true, 0.1, true, 30.0);
-	g_hCVRandomizeTimer = CreateConVar("sm_gbc_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbc_delay as the upper bound and 0.1 as the lower bound. sm_gbc_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTeam = CreateConVar("sm_gbc_team", "1", "Team to give cosmetics to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
-	g_hCVMVMSupport = CreateConVar("sm_gbc_mvm", "0", "Enables/disables giving bots cosmetics when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVEnabled = CreateConVar("sm_gbc_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVDelay = CreateConVar("sm_gbc_delay", "0.5", "Delay for giving cosmetics to bots", FCVAR_NONE, true, 0.1, true, 30.0);
+	ConVar hCVRandomizeDelay = CreateConVar("sm_gbc_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbc_delay as the upper bound and 0.1 as the lower bound. sm_gbc_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVTeam = CreateConVar("sm_gbc_team", "1", "Team to give cosmetics to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
+	ConVar hCVMVMSupported = CreateConVar("sm_gbc_mvm", "0", "Enables/disables giving bots cosmetics when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	OnEnabledChanged(g_hCVEnabled, "", "");
-	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
+	OnEnabledChanged(hCVEnabled, "", "");
+	HookConVarChange(hCVEnabled, OnEnabledChanged);
+	OnMVMSupportedChanged(hCVMVMSupported, "", "");
+	HookConVarChange(hCVMVMSupported, OnMVMSupportedChanged);
+	OnRandomizeDelayChanged(hCVRandomizeDelay, "", "");
+	HookConVarChange(hCVRandomizeDelay, OnRandomizeDelayChanged);
+	OnDelayChanged(hCVDelay, "", "");
+	HookConVarChange(hCVDelay, OnDelayChanged);
+	OnTeamChanged(hCVTeam, "", "");
+	HookConVarChange(hCVTeam, OnTeamChanged);
 	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Cosmetics");
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
@@ -72,26 +80,50 @@ public void OnPluginStart()
 
 	delete hGameConfig;
 	delete hCVVersioncvar;
+	delete hCVRandomizeDelay;
+	delete hCVTeam;
+	delete hCVMVMSupported;
+	delete hCVEnabled;
+	delete hCVDelay;
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (GetConVarBool(g_hCVEnabled))
+	if (GetConVarBool(convar))
 	{
+		g_bCVEnabled = true;
 		HookEvent("post_inventory_application", player_inv);
 	}
 	else
 	{
+		g_bCVEnabled = false;
 		UnhookEvent("post_inventory_application", player_inv);
 	}
 }
 
+public void OnMVMSupportedChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVMVMSupported = GetConVarBool(convar);
+}
+
+public void OnRandomizeDelayChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVRandomizeDelay = GetConVarBool(convar);
+}
+
+public void OnDelayChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_fCVDelay = GetConVarFloat(convar);
+}
+
+public void OnTeamChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_iCVTeam = GetConVarInt(convar);
+}
+
 public void OnMapStart()
 {
-	if (GameRules_GetProp("m_bPlayingMannVsMachine"))
-	{
-		g_bMVM = true;
-	}
+	g_bMVM = GameRules_GetProp("m_bPlayingMannVsMachine") ? true : false;
 }
 
 public void OnClientDisconnect(int client)
@@ -101,7 +133,7 @@ public void OnClientDisconnect(int client)
 
 public void player_inv(Handle event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarInt(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return;
 	}
@@ -116,15 +148,14 @@ public void player_inv(Handle event, const char[] name, bool dontBroadcast)
 	}
 
 	int team = GetClientTeam(client);
-	int cvteam = GetConVarInt(g_hCVTeam);
-	float cvdelay = GetConVarFloat(g_hCVTimer);
+	float cvdelay = g_fCVDelay;
 
-	if ((cvdelay > 0.1) && GetConVarBool(g_hCVRandomizeTimer))
+	if (g_bCVRandomizeDelay && (cvdelay > 0.1))
 	{
 		cvdelay = GetRandomUFloat(0.1, cvdelay);
 	}
 
-	switch (cvteam)
+	switch (g_iCVTeam)
 	{
 		case 1:
 		{
@@ -152,15 +183,14 @@ public Action Timer_GiveCosmetic(Handle timer, any data)
 	int client = GetClientOfUserId(data);
 	g_hTouched[client] = null;
 
-	if (!GetConVarInt(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !IsPlayerHere(client))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported) || !IsPlayerHere(client))
 	{
 		return Plugin_Stop;
 	}
 
 	int team = GetClientTeam(client);
-	int cvteam = GetConVarInt(g_hCVTeam);
 
-	switch (cvteam)
+	switch (g_iCVTeam)
 	{
 		case 2:
 		{
@@ -509,7 +539,7 @@ bool SelectClassHat(int client, TFClassType class)
 		}
 		case TFClass_Sniper:
 		{
-			rnd = GetRandomUInt(0,22);
+			rnd = GetRandomUInt(0,23);
 
 			switch (rnd)
 			{
@@ -602,6 +632,10 @@ bool SelectClassHat(int client, TFClassType class)
 				case 22:
 				{
 					CreateCosmetic(client, 30135, 6); // Wet Works
+				}
+				case 23:
+				{
+					CreateCosmetic(client, 30173, 6); // Brim-Full Of Bullets
 				}
 			}
 		}
@@ -764,7 +798,7 @@ bool SelectClassHat(int client, TFClassType class)
 		}
 		case TFClass_DemoMan:
 		{
-			rnd = GetRandomUInt(0,28);
+			rnd = GetRandomUInt(0,29);
 
 			switch (rnd)
 			{
@@ -883,11 +917,15 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30106, 6); // Tartan Spartan
 				}
+				case 29:
+				{
+					CreateCosmetic(client, 30180, 6); // Pirate Bandana
+				}
 			}
 		}
 		case TFClass_Medic:
 		{
-			rnd = GetRandomUInt(0,26);
+			rnd = GetRandomUInt(0,27);
 
 			switch (rnd)
 			{
@@ -997,6 +1035,10 @@ bool SelectClassHat(int client, TFClassType class)
 				case 26:
 				{
 					CreateCosmetic(client, 30097, 6); // Das Ubersternmann
+				}
+				case 27:
+				{
+					CreateCosmetic(client, 30187, 6); // Slick Cut
 				}
 			}
 		}
@@ -1155,7 +1197,7 @@ bool SelectClassHat(int client, TFClassType class)
 		}
 		case TFClass_Pyro:
 		{
-			rnd = GetRandomUInt(0,35);
+			rnd = GetRandomUInt(0,37);
 
 			switch (rnd)
 			{
@@ -1308,11 +1350,20 @@ bool SelectClassHat(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30139, 6); // Pampered Pyro
 				}
+				case 36:
+				{
+					CreateCosmetic(client, 30163, 6); // Air Raider
+					face = true;
+				}
+				case 37:
+				{
+					CreateCosmetic(client, 30162, 6); // Bone Dome
+				}
 			}
 		}
 		case TFClass_Spy:
 		{
-			rnd = GetRandomUInt(0,19);
+			rnd = GetRandomUInt(0,20);
 
 			switch (rnd)
 			{
@@ -1394,6 +1445,10 @@ bool SelectClassHat(int client, TFClassType class)
 				case 19:
 				{
 					CreateCosmetic(client, 30123, 6); // Harmburg
+				}
+				case 20:
+				{
+					CreateCosmetic(client, 30182, 6); // L'homme Burglerre
 				}
 			}
 		}
@@ -1614,7 +1669,7 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Soldier:
 		{
-			rnd = GetRandomUInt(0,5);
+			rnd = GetRandomUInt(0,7);
 
 			switch (rnd)
 			{
@@ -1637,6 +1692,14 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				case 5:
 				{
 					CreateCosmetic(client, 30085, 6); // Macho Mann
+				}
+				case 6:
+				{
+					CreateCosmetic(client, 30165, 6); // Cuban Bristle Crisis
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 30164, 6); // Viking Braider
 				}
 			}
 		}
@@ -1678,7 +1741,7 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Medic:
 		{
-			rnd = GetRandomUInt(0,7);
+			rnd = GetRandomUInt(0,8);
 
 			switch (rnd)
 			{
@@ -1710,11 +1773,15 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30085, 6); // Macho Mann
 				}
+				case 8:
+				{
+					CreateCosmetic(client, 30186, 6); // A Brush with Death
+				}
 			}
 		}
 		case TFClass_Heavy:
 		{
-			rnd = GetRandomUInt(0,5);
+			rnd = GetRandomUInt(0,7);
 
 			switch (rnd)
 			{
@@ -1738,11 +1805,19 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30085, 6); // Macho Mann
 				}
+				case 6:
+				{
+					CreateCosmetic(client, 30165, 6); // Cuban Bristle Crisis
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 30164, 6); // Viking Braider
+				}
 			}
 		}
 		case TFClass_Pyro:
 		{
-			rnd = GetRandomUInt(0,3);
+			rnd = GetRandomUInt(0,5);
 
 			switch (rnd)
 			{
@@ -1757,6 +1832,14 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				case 3:
 				{
 					CreateCosmetic(client, 387, 6); // Sight for Sore Eyes
+				}
+				case 4:
+				{
+					CreateCosmetic(client, 30176, 6); // Pop-Eyes
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 30168, 6); // Special Eyes
 				}
 			}
 		}
@@ -1802,7 +1885,7 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Engineer:
 		{
-			rnd = GetRandomUInt(0,6);
+			rnd = GetRandomUInt(0,10);
 
 			switch (rnd)
 			{
@@ -1829,6 +1912,22 @@ void SelectClassFacialCosmetic(int client, TFClassType class)
 				case 6:
 				{
 					CreateCosmetic(client, 30085, 6); // Macho Mann
+				}
+				case 7:
+				{
+					CreateCosmetic(client, 30165, 6); // Cuban Bristle Crisis
+				}
+				case 8:
+				{
+					CreateCosmetic(client, 30164, 6); // Viking Braider
+				}
+				case 9:
+				{
+					CreateCosmetic(client, 30168, 6); // Special Eyes
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 30172, 6); // Gold Digger
 				}
 			}
 		}
@@ -1936,7 +2035,7 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 	{
 		case TFClass_Scout:
 		{
-			rnd = GetRandomUInt(0,16);
+			rnd = GetRandomUInt(0,19);
 
 			switch (rnd)
 			{
@@ -2004,11 +2103,23 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30084, 6); // Half-Pipe Hurdler
 				}
+				case 17:
+				{
+					CreateCosmetic(client, 30185, 6); // Flapjack
+				}
+				case 18:
+				{
+					CreateCosmetic(client, 30189, 6); // Frenchman's Formals
+				}
+				case 19:
+				{
+					CreateCosmetic(client, 30178, 6); // Weight Room Warmer
+				}
 			}
 		}
 		case TFClass_Sniper:
 		{
-			rnd = GetRandomUInt(0,10);
+			rnd = GetRandomUInt(0,11);
 
 			switch (rnd)
 			{
@@ -2051,6 +2162,10 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				case 10:
 				{
 					CreateCosmetic(client, 30101, 6); // Cobber Chameleon
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 30170, 6); // Chronomancer
 				}
 			}
 		}
@@ -2116,7 +2231,7 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 		}
 		case TFClass_DemoMan:
 		{
-			rnd = GetRandomUInt(0,13);
+			rnd = GetRandomUInt(0,15);
 
 			switch (rnd)
 			{
@@ -2172,11 +2287,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30110, 6); // Whiskey Bib
 				}
+				case 14:
+				{
+					CreateCosmetic(client, 30179, 6); // Hurt Locher
+				}
+				case 15:
+				{
+					CreateCosmetic(client, 30178, 6); // Weight Room Warmer
+				}
 			}
 		}
 		case TFClass_Medic:
 		{
-			rnd = GetRandomUInt(0,11);
+			rnd = GetRandomUInt(0,13);
 
 			switch (rnd)
 			{
@@ -2224,11 +2347,19 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30137, 6); // Das Fantzipantzen
 				}
+				case 12:
+				{
+					CreateCosmetic(client, 30171, 6); // Medical Mystery
+				}
+				case 13:
+				{
+					CreateCosmetic(client, 30190, 6); // Ward
+				}
 			}
 		}
 		case TFClass_Heavy:
 		{
-			rnd = GetRandomUInt(0,12);
+			rnd = GetRandomUInt(0,13);
 
 			switch (rnd)
 			{
@@ -2280,11 +2411,15 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30079, 6); // Red Army Robin
 				}
+				case 13:
+				{
+					CreateCosmetic(client, 30178, 6); // Weight Room Warmer
+				}
 			}
 		}
 		case TFClass_Pyro:
 		{
-			rnd = GetRandomUInt(0,19);
+			rnd = GetRandomUInt(0,20);
 
 			switch (rnd)
 			{
@@ -2364,11 +2499,15 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30092, 6); // Soot Suit
 				}
+				case 20:
+				{
+					CreateCosmetic(client, 30169, 6); // Trickster's Turnout Gear
+				}
 			}
 		}
 		case TFClass_Spy:
 		{
-			rnd = GetRandomUInt(0,9);
+			rnd = GetRandomUInt(0,11);
 
 			switch (rnd)
 			{
@@ -2407,6 +2546,14 @@ void SelectClassTorsoCosmetic(int client, TFClassType class)
 				case 9:
 				{
 					CreateCosmetic(client, 30133, 6); // After Dark
+				}
+				case 10:
+				{
+					CreateCosmetic(client, 30189, 6); // Frenchman's Formals
+				}
+				case 11:
+				{
+					CreateCosmetic(client, 30183, 6); // Escapist
 				}
 			}
 		}
@@ -2478,7 +2625,7 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 	{
 		case TFClass_Scout:
 		{
-			rnd = GetRandomUInt(0,6);
+			rnd = GetRandomUInt(0,7);
 
 			switch (rnd)
 			{
@@ -2506,11 +2653,15 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 				{
 					CreateCosmetic(client, 30060, 6); // Cheet Sheet
 				}
+				case 7:
+				{
+					CreateCosmetic(client, 30167, 6); // Beep Boy
+				}
 			}
 		}
 		case TFClass_Sniper:
 		{
-			rnd = GetRandomUInt(0,4);
+			rnd = GetRandomUInt(0,5);
 
 			switch (rnd)
 			{
@@ -2529,6 +2680,10 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 				case 4:
 				{
 					CreateCosmetic(client, 948, 6); // Deadliest Duckling
+				}
+				case 5:
+				{
+					CreateCosmetic(client, 30181, 6); // Li'l Snaggletooth
 				}
 			}
 		}
@@ -2626,7 +2781,15 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 		}
 		case TFClass_Pyro:
 		{
-			// nothing for now
+			rnd = GetRandomUInt(0,1);
+
+			switch (rnd)
+			{
+				case 1:
+				{
+					CreateCosmetic(client, 30167, 6); // Beep Boy
+				}
+			}
 		}
 		case TFClass_Spy:
 		{
@@ -2701,6 +2864,10 @@ void SelectClassLegsCosmetic(int client, TFClassType class)
 				case 13:
 				{
 					CreateCosmetic(client, 30113, 6); // Flared Frontiersman
+				}
+				case 14:
+				{
+					CreateCosmetic(client, 30167, 6); // Beep Boy
 				}
 			}
 		}

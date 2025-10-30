@@ -5,7 +5,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.50"
+#define PLUGIN_VERSION "1.51"
 #define COLLISION_GROUP_DEBRIS_TRIGGER 2
 #define EF_NODRAW 32
 
@@ -177,11 +177,7 @@ public void OnTeamChanged(ConVar convar, const char[] oldValue, const char[] new
 
 public void OnMapStart()
 {
-	if (GameRules_GetProp("m_bPlayingMannVsMachine"))
-	{
-		g_bMVM = true;
-	}
-
+	g_bMVM = GameRules_GetProp("m_bPlayingMannVsMachine") ? true : false;
 	g_iResourceEntity = GetPlayerResourceEntity();
 	HookEntities("func_regenerate");
 	HookEntities("func_respawnroom");

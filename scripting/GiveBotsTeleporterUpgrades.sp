@@ -4,7 +4,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.01"
+#define PLUGIN_VERSION "1.02"
 #define TELEPORTER_ENTRANCE 1
 #define TELEPORTER_EXIT 2
 
@@ -94,10 +94,7 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 
 public void OnMapStart()
 {
-	if (GameRules_GetProp("m_bPlayingMannVsMachine"))
-	{
-		g_bMVM = true;
-	}
+	g_bMVM = GameRules_GetProp("m_bPlayingMannVsMachine") ? true : false;
 }
 
 public void OnClientDisconnect(int client)
