@@ -4,23 +4,27 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.07"
+#define PLUGIN_VERSION "1.10"
 
-bool g_bMVM = false;
-int g_iNamesArraySize = 0;
-int g_iNamesFilePosition = 0;
+#define BOTH_TEAMS 1
+#define RED_TEAM 2
+#define BLU_TEAM 3
+
+bool g_bMVM;
+bool g_bCVEnabled;
+bool g_bCVMVMSupported;
+bool g_bCVEnforceNameChange;
+bool g_bCVRenameOnReload;
+bool g_bCVSuppressNameChangeText;
+bool g_bCVSuppressJoinText;
+bool g_bCVSuppressConnectText;
+bool g_bCVRandomizeNames;
+int g_iNamesArraySize;
+int g_iNamesFilePosition;
+int g_iCVTeam;
 char g_sNamesFilePath[PLATFORM_MAX_PATH];
-ConVar g_hCVEnabled;
-ConVar g_hCVTeam;
-ConVar g_hCVMVMSupport;
-ConVar g_hCVPrefix;
-ConVar g_hCVSuffix;
-ConVar g_hCVRandomize;
-ConVar g_hCVEnforceNameChange;
-ConVar g_hCVRenameOnReload;
-ConVar g_hCVSuppressNameChangeText;
-ConVar g_hCVSuppressJoinText;
-ConVar g_hCVSuppressConnectText;
+char g_sCVNamePrefix[MAX_NAME_LENGTH/2];
+char g_sCVNameSuffix[MAX_NAME_LENGTH/2];
 Handle g_hOrderedNamesArray;
 Handle g_hRandomizedNamesArray;
 Handle g_hSelectedNamesArray;
@@ -47,31 +51,65 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-	ConVar hCVVersioncvar = CreateConVar("sm_gbn_version", PLUGIN_VERSION, "Give Bots Names version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
-	g_hCVEnabled = CreateConVar("sm_gbn_enabled", "1", "Enables/disables this plugin.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTeam = CreateConVar("sm_gbn_team", "1", "Team whose players get renamed: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
-	g_hCVMVMSupport = CreateConVar("sm_gbn_mvm", "0", "Enables/disables giving bots names when MVM mode is enabled.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVPrefix = CreateConVar("sm_gbn_prefix", "", "Prefix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
-	g_hCVSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
-	g_hCVRandomize = CreateConVar("sm_gbn_randomizenames", "1", "Enables/disables randomizing names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enables/disables enforcing names by catching name changes. This has a performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Enables/disables checking and renaming all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVSuppressNameChangeText = CreateConVar("sm_gbn_suppressnamechangetext", "1", "Enables/disables suppressing chat text when bots are renamed.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVSuppressJoinText = CreateConVar("sm_gbn_suppressjointeamtext", "1", "Enables/disables suppressing chat text when bots are joining a team.", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVSuppressConnectText = CreateConVar("sm_gbn_suppressjoingametext", "1", "Enables/disables suppressing chat text when bots are joining the game.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVVersion = CreateConVar("sm_gbn_version", PLUGIN_VERSION, "Give Bots Names version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	ConVar hCVEnabled = CreateConVar("sm_gbn_enabled", "1", "Enables/disables this plugin.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVTeam = CreateConVar("sm_gbn_team", "1", "Team whose players get renamed: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
+	ConVar hCVMVMSupported = CreateConVar("sm_gbn_mvm", "0", "Enables/disables giving bots names when MVM mode is enabled.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVNamePrefix = CreateConVar("sm_gbn_prefix", "", "Prefix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
+	ConVar hCVNameSuffix = CreateConVar("sm_gbn_suffix", "", "Suffix for all bot names. Requires names reload and rename trigger.", FCVAR_NONE);
+	ConVar hCVRandomizeNames = CreateConVar("sm_gbn_randomizenames", "1", "Enables/disables randomizing names from the file. Takes Effect on next bot renaming.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVEnforceNameChange = CreateConVar("sm_gbn_enforcenames", "0", "Enables/disables enforcing names by catching name changes. This has a performance impact.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVRenameOnReload = CreateConVar("sm_gbn_renameonreload", "1", "Enables/disables checking and renaming all bots after the bot names file is reloaded.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVSuppressNameChangeText = CreateConVar("sm_gbn_suppressnamechangetext", "1", "Enables/disables suppressing chat text when bots are renamed.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVSuppressJoinText = CreateConVar("sm_gbn_suppressjointeamtext", "1", "Enables/disables suppressing chat text when bots are joining a team.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVSuppressConnectText = CreateConVar("sm_gbn_suppressjoingametext", "1", "Enables/disables suppressing chat text when bots are joining the game.", FCVAR_NONE, true, 0.0, true, 1.0);
+
 	BuildPath(Path_SM, g_sNamesFilePath, sizeof(g_sNamesFilePath), "configs/GiveBotsNames.txt");
 	RegAdminCmd("sm_gbn_reloadnames", ReloadNames, ADMFLAG_CONFIG, "Reloads the file with names.");
-	OnEnabledChanged(g_hCVEnabled, "", "");
-	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
-	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
+	OnEnabledChanged(hCVEnabled, "", "");
+	HookConVarChange(hCVEnabled, OnEnabledChanged);
+	OnMVMSupportedChanged(hCVMVMSupported, "", "");
+	HookConVarChange(hCVMVMSupported, OnMVMSupportedChanged);
+	OnTeamChanged(hCVTeam, "", "");
+	HookConVarChange(hCVTeam, OnTeamChanged);
+	OnNamePrefixChanged(hCVNamePrefix, "", "");
+	HookConVarChange(hCVNamePrefix, OnNamePrefixChanged);
+	OnNameSuffixChanged(hCVNameSuffix, "", "");
+	HookConVarChange(hCVNameSuffix, OnNameSuffixChanged);
+	OnRandomizeNamesChanged(hCVRandomizeNames, "", "");
+	HookConVarChange(hCVRandomizeNames, OnRandomizeNamesChanged);
+	OnEnforceNameChangeChanged(hCVEnforceNameChange, "", "");
+	HookConVarChange(hCVEnforceNameChange, OnEnforceNameChangeChanged);
+	OnRenameOnReloadChanged(hCVRenameOnReload, "", "");
+	HookConVarChange(hCVRenameOnReload, OnRenameOnReloadChanged);
+	OnSuppressNameChangeTextChanged(hCVSuppressNameChangeText, "", "");
+	HookConVarChange(hCVSuppressNameChangeText, OnSuppressNameChangeTextChanged);
+	OnSuppressJoinTextChanged(hCVSuppressJoinText, "", "");
+	HookConVarChange(hCVSuppressJoinText, OnSuppressJoinTextChanged);
+	OnSuppressConnectTextChanged(hCVSuppressConnectText, "", "");
+	HookConVarChange(hCVSuppressConnectText, OnSuppressConnectTextChanged);
+	SetConVarString(hCVVersion, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Names");
-	delete hCVVersioncvar;
+
+	delete hCVVersion;
+	delete hCVEnabled;
+	delete hCVTeam;
+	delete hCVMVMSupported;
+	delete hCVNamePrefix;
+	delete hCVNameSuffix;
+	delete hCVRandomizeNames;
+	delete hCVEnforceNameChange;
+	delete hCVRenameOnReload;
+	delete hCVSuppressNameChangeText;
+	delete hCVSuppressJoinText;
+	delete hCVSuppressConnectText;
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (GetConVarBool(g_hCVEnabled))
+	if (GetConVarBool(convar))
 	{
+		g_bCVEnabled = true;
 		HookUserMessage(GetUserMessageId("SayText2"), UserMessageSayText2, true, INVALID_FUNCTION);
 		HookEvent("player_changename", Event_PlayerChangename);
 		HookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
@@ -79,6 +117,7 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 	}
 	else
 	{
+		g_bCVEnabled = false;
 		UnhookUserMessage(GetUserMessageId("SayText2"), UserMessageSayText2, true);
 		UnhookEvent("player_changename", Event_PlayerChangename);
 		UnhookEvent("player_team", Event_PlayerTeam, EventHookMode_Pre);
@@ -86,9 +125,55 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 	}
 }
 
-public void OnRandomizeChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+public void OnMVMSupportedChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	g_hSelectedNamesArray = GetConVarBool(g_hCVRandomize) == true ? g_hRandomizedNamesArray : g_hOrderedNamesArray;
+	g_bCVMVMSupported = GetConVarBool(convar);
+}
+
+public void OnEnforceNameChangeChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVEnforceNameChange = GetConVarBool(convar);
+}
+
+public void OnRenameOnReloadChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVRenameOnReload = GetConVarBool(convar);
+}
+
+public void OnSuppressNameChangeTextChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVSuppressNameChangeText = GetConVarBool(convar);
+}
+
+public void OnSuppressJoinTextChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVSuppressJoinText = GetConVarBool(convar);
+}
+
+public void OnSuppressConnectTextChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVSuppressConnectText = GetConVarBool(convar);
+}
+
+public void OnNamePrefixChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	GetConVarString(convar, g_sCVNamePrefix, sizeof(g_sCVNamePrefix));
+}
+
+public void OnNameSuffixChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	GetConVarString(convar, g_sCVNameSuffix, sizeof(g_sCVNameSuffix));
+}
+
+public void OnTeamChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_iCVTeam = GetConVarInt(convar);
+}
+
+public void OnRandomizeNamesChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVRandomizeNames = GetConVarBool(convar);
+	g_hSelectedNamesArray = g_bCVRandomizeNames == true ? g_hRandomizedNamesArray : g_hOrderedNamesArray;
 }
 
 public void OnMapStart()
@@ -132,10 +217,6 @@ public Action ReloadNames(int client, int args)
 		g_hRandomizedNamesArray = CreateArray(MAX_NAME_LENGTH);
 	}
 
-	char prefix[MAX_NAME_LENGTH/2], suffix[MAX_NAME_LENGTH/2];
-	GetConVarString(g_hCVPrefix, prefix, sizeof(prefix));
-	GetConVarString(g_hCVSuffix, suffix, sizeof(suffix));
-
 	while (!IsEndOfFile(file))
 	{
 		char combinedName[MAX_NAME_LENGTH], newName[MAX_NAME_LENGTH];
@@ -152,14 +233,14 @@ public Action ReloadNames(int client, int args)
 			continue;
 		}
 
-		FormatEx(combinedName, sizeof(combinedName), "%s%s%s", prefix, newName, suffix);
+		FormatEx(combinedName, sizeof(combinedName), "%s%s%s", g_sCVNamePrefix, newName, g_sCVNameSuffix);
 		PushArrayString(g_hOrderedNamesArray, combinedName);
 		PushArrayString(g_hRandomizedNamesArray, combinedName);
 	}
 
 	delete file;
 	RandomizeNames();
-	g_hSelectedNamesArray = GetConVarBool(g_hCVRandomize) == true ? g_hRandomizedNamesArray : g_hOrderedNamesArray;
+	g_hSelectedNamesArray = g_bCVRandomizeNames == true ? g_hRandomizedNamesArray : g_hOrderedNamesArray;
 	g_iNamesArraySize = GetArraySize(g_hSelectedNamesArray);
 	ReplyToCommand(client, "Bot name file GiveBotsNames.txt loaded");
 
@@ -172,7 +253,7 @@ public Action ReloadNames(int client, int args)
 		g_iNamesArraySize = GetArraySize(g_hSelectedNamesArray);
 	}
 
-	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVRenameOnReload) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || !g_bCVRenameOnReload || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return Plugin_Handled;
 	}
@@ -278,7 +359,7 @@ void PullNextName(char[] nextName)
 
 public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !(GetConVarBool(g_hCVSuppressConnectText)) || (GetEventBool(event,"bot") != true))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported) || !g_bCVSuppressConnectText || (GetEventBool(event,"bot") != true))
 	{
 		return Plugin_Continue;
 	}
@@ -289,7 +370,7 @@ public Action Event_PlayerConnect(Event event, const char[] name, bool dontBroad
 
 public Action Event_PlayerTeam(Handle event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !(GetConVarBool(g_hCVSuppressJoinText)))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported) || !g_bCVSuppressJoinText)
 	{
 		return Plugin_Continue;
 	}
@@ -308,7 +389,7 @@ public Action Event_PlayerTeam(Handle event, const char[] name, bool dontBroadca
 
 public void Event_PlayerChangename(Handle event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVEnforceNameChange) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || !g_bCVEnforceNameChange || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return;
 	}
@@ -320,7 +401,7 @@ public void Event_PlayerChangename(Handle event, const char[] name, bool dontBro
 
 public Action UserMessageSayText2(UserMsg msg_id, BfRead bf, const int[] players, int playersNum, bool reliable, bool init)
 {
-	if (!GetConVarBool(g_hCVEnabled) || !GetConVarBool(g_hCVSuppressNameChangeText) || !reliable || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || !g_bCVSuppressNameChangeText || !reliable || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return Plugin_Continue;
 	}
@@ -341,40 +422,22 @@ void BotRenameFrame(int userId)
 {
 	int client = GetClientOfUserId(userId);
 
-	if (!IsPlayerHere(client))
+	if (!IsPlayerHere(client) || !IsPlayerAllowed(client))
 	{
 		return;
 	}
 
-	int team = GetClientTeam(client);
-	int cvteam = GetConVarInt(g_hCVTeam);
-
-	switch (cvteam)
-	{
-		case 1:
-		{
-			RenameClient(client);
-		}
-		case 2:
-		{
-			if (team == 2)
-			{
-				RenameClient(client);
-			}
-		}
-		case 3:
-		{
-			if (team == 3)
-			{
-				RenameClient(client);
-			}
-		}
-	}
+	RenameClient(client);
 }
 
 bool IsPlayerHere(int client)
 {
 	return (client && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
+}
+
+bool IsPlayerAllowed(int client)
+{
+	return ((g_iCVTeam == BOTH_TEAMS) || (GetClientTeam(client) == g_iCVTeam) ? true : false);
 }
 
 int GetRandomUInt(int min, int max)

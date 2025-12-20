@@ -4,18 +4,22 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.02"
+#define PLUGIN_VERSION "1.05"
 #define TELEPORTER_ENTRANCE 1
 #define TELEPORTER_EXIT 2
 
+#define BOTH_TEAMS 1
+#define RED_TEAM 2
+#define BLU_TEAM 3
+
 bool g_bMVM;
+bool g_bCVEnabled;
+bool g_bCVMVMSupported;
+bool g_bCVConsumeMetal;
 int g_iTeleportId[MAXPLAYERS+1];
 int g_iOffsetForMatchingTeleporters;
-ConVar g_hCVTimer;
-ConVar g_hCVEnabled;
-ConVar g_hCVTeam;
-ConVar g_hCVMVMSupport;
-ConVar g_hCVRequireMetal;
+int g_iCVTeam;
+float g_fCVDelay;
 Handle g_hTeleportBuilt[MAXPLAYERS+1];
 Handle g_hBuildingStartUpgrading;
 
@@ -41,16 +45,24 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-	ConVar hCVVersioncvar = CreateConVar("sm_gbtu_version", PLUGIN_VERSION, "Give Bots Teleporter Upgrades version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
-	g_hCVEnabled = CreateConVar("sm_gbtu_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVTimer = CreateConVar("sm_gbtu_delay", "10.0", "Delay between upgrade attempts, starting when a bot teleporter is created", FCVAR_NONE, true, 1.0, true, 300.0);
-	g_hCVTeam = CreateConVar("sm_gbtu_team", "1", "Team to give teleport upgrades to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
-	g_hCVMVMSupport = CreateConVar("sm_gbtu_mvm", "0", "Enables/disables giving teleport upgrades when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
-	g_hCVRequireMetal = CreateConVar("sm_gbtu_consumemetal", "1", "Enables/disables consuming full metal amount, needed for a level upgrade, at the teleporter upgrade time. The teleporter is not upgraded until the bot has enough metal.", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVVersion = CreateConVar("sm_gbtu_version", PLUGIN_VERSION, "Give Bots Teleporter Upgrades version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	ConVar hCVEnabled = CreateConVar("sm_gbtu_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVDelay = CreateConVar("sm_gbtu_delay", "10.0", "Delay between upgrade attempts, starting when a bot teleporter is created", FCVAR_NONE, true, 1.0, true, 300.0);
+	ConVar hCVTeam = CreateConVar("sm_gbtu_team", "1", "Team to give teleport upgrades to: 1-both, 2-red, 3-blu", FCVAR_NONE, true, 1.0, true, 3.0);
+	ConVar hCVMVMSupported = CreateConVar("sm_gbtu_mvm", "0", "Enables/disables giving teleport upgrades when MVM mode is enabled", FCVAR_NONE, true, 0.0, true, 1.0);
+	ConVar hCVConsumeMetal = CreateConVar("sm_gbtu_consumemetal", "1", "Enables/disables consuming full metal amount, needed for a level upgrade, at the teleporter upgrade time. The teleporter is not upgraded until the bot has enough metal.", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	OnEnabledChanged(g_hCVEnabled, "", "");
-	HookConVarChange(g_hCVEnabled, OnEnabledChanged);
-	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
+	OnEnabledChanged(hCVEnabled, "", "");
+	HookConVarChange(hCVEnabled, OnEnabledChanged);
+	OnMVMSupportedChanged(hCVMVMSupported, "", "");
+	HookConVarChange(hCVMVMSupported, OnMVMSupportedChanged);
+	OnDelayChanged(hCVDelay, "", "");
+	HookConVarChange(hCVDelay, OnDelayChanged);
+	OnTeamChanged(hCVTeam, "", "");
+	HookConVarChange(hCVTeam, OnTeamChanged);
+	OnTeamChanged(hCVConsumeMetal, "", "");
+	HookConVarChange(hCVConsumeMetal, OnConsumeMetalChanged);
+	SetConVarString(hCVVersion, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Teleport_Upgrades");
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
 
@@ -75,26 +87,65 @@ public void OnPluginStart()
 	}
 
 	delete hGameConfig;
-	delete hCVVersioncvar;
+	delete hCVVersion;
+	delete hCVEnabled;
+	delete hCVDelay;
+	delete hCVTeam;
+	delete hCVMVMSupported;
+	delete hCVConsumeMetal;
 }
 
 public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (GetConVarBool(g_hCVEnabled))
+	if (GetConVarBool(convar))
 	{
+		g_bCVEnabled = true;
 		HookEvent("player_builtobject", player_builtobject);
 		HookEvent("object_removed", object_removed);
 	}
 	else
 	{
+		g_bCVEnabled = false;
 		UnhookEvent("player_builtobject", player_builtobject);
 		UnhookEvent("object_removed", object_removed);
+
+		for (int i = 0; i < (MAXPLAYERS+1); i++)
+		{
+			delete g_hTeleportBuilt[i];
+			g_iTeleportId[i] = 0;
+		}
 	}
+}
+
+public void OnConsumeMetalChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVConsumeMetal = GetConVarBool(convar);
+}
+
+public void OnMVMSupportedChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_bCVMVMSupported = GetConVarBool(convar);
+}
+
+public void OnDelayChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_fCVDelay = GetConVarFloat(convar);
+}
+
+public void OnTeamChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	g_iCVTeam = GetConVarInt(convar);
 }
 
 public void OnMapStart()
 {
 	g_bMVM = GameRules_GetProp("m_bPlayingMannVsMachine") ? true : false;
+
+	for (int i = 0; i < (MAXPLAYERS+1); i++)
+	{
+		delete g_hTeleportBuilt[i];
+		g_iTeleportId[i] = 0;
+	}
 }
 
 public void OnClientDisconnect(int client)
@@ -105,7 +156,7 @@ public void OnClientDisconnect(int client)
 
 public void player_builtobject(Handle event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return;
 	}
@@ -128,46 +179,20 @@ public void player_builtobject(Handle event, const char[] name, bool dontBroadca
 	int userId = GetEventInt(event,"userid");
 	int client = GetClientOfUserId(userId);
 
-	if (!IsPlayerHere(client))
+	if (!IsPlayerHere(client) || !IsPlayerAllowed(client))
 	{
 		return;
 	}
 
-	float cvdelay = GetConVarFloat(g_hCVTimer);
-	int team = GetClientTeam(client);
-	int cvteam = GetConVarInt(g_hCVTeam);
-
-	switch (cvteam)
-	{
-		case 1:
-		{
-			g_hTeleportBuilt[client] = CreateTimer(cvdelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-			g_iTeleportId[client] = EntIndexToEntRef(objectId);
-		}
-		case 2:
-		{
-			if (team == 2)
-			{
-				g_hTeleportBuilt[client] = CreateTimer(cvdelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-				g_iTeleportId[client] = EntIndexToEntRef(objectId);
-			}
-		}
-		case 3:
-		{
-			if (team == 3)
-			{
-				g_hTeleportBuilt[client] = CreateTimer(cvdelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
-				g_iTeleportId[client] = EntIndexToEntRef(objectId);
-			}
-		}
-	}
+	g_hTeleportBuilt[client] = CreateTimer(g_fCVDelay, Timer_UpgradeTeleporter, userId, TIMER_FLAG_NO_MAPCHANGE | TIMER_REPEAT);
+	g_iTeleportId[client] = EntIndexToEntRef(objectId);
 }
 
 public Action Timer_UpgradeTeleporter(Handle timer, any data)
 {
 	int client = GetClientOfUserId(data);
 
-	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)) || !IsPlayerHere(client))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported) || !IsPlayerHere(client))
 	{
 		g_hTeleportBuilt[client] = null;
 		g_iTeleportId[client] = 0;
@@ -176,14 +201,14 @@ public Action Timer_UpgradeTeleporter(Handle timer, any data)
 
 	int objectId = EntRefToEntIndex(g_iTeleportId[client]);
 
-	if (!IsValidEntity(objectId) || objectId < 1)
+	if (!IsValidEntity(objectId) || (objectId < 1))
 	{
 		g_hTeleportBuilt[client] = null;
 		g_iTeleportId[client] = 0;
 		return Plugin_Stop;
 	}
 
-	if (GetEntProp(objectId, Prop_Send, "m_bBuilding") == 1 || GetEntProp(objectId, Prop_Send, "m_bHasSapper") == 1 || GetEntProp(objectId, Prop_Send, "m_bCarried") == 1 || GetEntProp(objectId, Prop_Send, "m_bPlacing") == 1)
+	if ((GetEntProp(objectId, Prop_Send, "m_bBuilding") == 1) || (GetEntProp(objectId, Prop_Send, "m_bHasSapper") == 1) || (GetEntProp(objectId, Prop_Send, "m_bCarried") == 1) || (GetEntProp(objectId, Prop_Send, "m_bPlacing") == 1))
 	{
 		return Plugin_Continue;
 	}
@@ -193,7 +218,7 @@ public Action Timer_UpgradeTeleporter(Handle timer, any data)
 
 	if (objectLevel < 3)
 	{
-		if (GetConVarBool(g_hCVRequireMetal))
+		if (g_bCVConsumeMetal)
 		{
 			int clientMetal = GetEntProp(client, Prop_Data, "m_iAmmo", 4, 3);
 			int metalSpent = GetEntProp(objectId, Prop_Send, "m_iUpgradeMetal");
@@ -218,7 +243,7 @@ public Action Timer_UpgradeTeleporter(Handle timer, any data)
 		objectLevel = GetEntProp(objectId, Prop_Send, "m_iUpgradeLevel");
 		int matchedTeleLevel = GetEntProp(matchingTele, Prop_Send, "m_iUpgradeLevel");
 
-		if (matchedTeleLevel != objectLevel && matchedTeleLevel < 3 && GetEntProp(matchingTele, Prop_Send, "m_bHasSapper") != 1 && GetEntProp(matchingTele, Prop_Send, "m_bCarried") != 1 && GetEntProp(matchingTele, Prop_Send, "m_bPlacing") != 1)
+		if ((matchedTeleLevel != objectLevel) && (matchedTeleLevel < 3) && (GetEntProp(matchingTele, Prop_Send, "m_bHasSapper") != 1) && (GetEntProp(matchingTele, Prop_Send, "m_bCarried") != 1) && (GetEntProp(matchingTele, Prop_Send, "m_bPlacing") != 1))
 		{
 			SetEntProp(matchingTele, Prop_Send, "m_iUpgradeMetal", 0);
 
@@ -239,7 +264,7 @@ public Action Timer_UpgradeTeleporter(Handle timer, any data)
 
 public void object_removed(Handle event, const char[] name, bool dontBroadcast)
 {
-	if (!GetConVarBool(g_hCVEnabled) || (g_bMVM && !GetConVarBool(g_hCVMVMSupport)))
+	if (!g_bCVEnabled || (g_bMVM && !g_bCVMVMSupported))
 	{
 		return;
 	}
@@ -250,12 +275,8 @@ public void object_removed(Handle event, const char[] name, bool dontBroadcast)
 
 	if (storedObjectId == objectId)
 	{
+		delete g_hTeleportBuilt[client];
 		g_iTeleportId[client] = 0;
-
-		if (g_hTeleportBuilt[client] != null)
-		{
-			delete g_hTeleportBuilt[client];
-		}
 	}
 }
 
@@ -275,4 +296,9 @@ int GetMatchingTeleporter(int ent)
 bool IsPlayerHere(int client)
 {
 	return (client && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
+}
+
+bool IsPlayerAllowed(int client)
+{
+	return ((g_iCVTeam == BOTH_TEAMS) || (GetClientTeam(client) == g_iCVTeam) ? true : false);
 }

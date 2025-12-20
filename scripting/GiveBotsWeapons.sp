@@ -5,9 +5,13 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define PLUGIN_VERSION "1.51"
+#define PLUGIN_VERSION "1.52"
 #define COLLISION_GROUP_DEBRIS_TRIGGER 2
 #define EF_NODRAW 32
+
+#define BOTH_TEAMS 1
+#define RED_TEAM 2
+#define BLU_TEAM 3
 
 bool g_bSuddenDeathMode;
 bool g_bMVM;
@@ -46,7 +50,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public void OnPluginStart()
 {
-	ConVar hCVVersioncvar = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	ConVar hCVVersion = CreateConVar("sm_gbw_version", PLUGIN_VERSION, "Give Bots Weapons version cvar", FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	ConVar hCVEnabled = CreateConVar("sm_gbw_enabled", "1", "Enables/disables this plugin", FCVAR_NONE, true, 0.0, true, 1.0);
 	ConVar hCVDelay = CreateConVar("sm_gbw_delay", "0.5", "Delay for giving weapons to bots", FCVAR_NONE, true, 0.1, true, 30.0);
 	ConVar hCVRandomizeDelay = CreateConVar("sm_gbw_randomizedelay", "1", "Whether to randomize delay value by taking sm_gbw_delay as the upper bound and 0.1 as the lower bound. sm_gbw_delay must be bigger than 0.1", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -69,7 +73,7 @@ public void OnPluginStart()
 	HookConVarChange(hCVDelay, OnDelayChanged);
 	OnTeamChanged(hCVTeam, "", "");
 	HookConVarChange(hCVTeam, OnTeamChanged);
-	SetConVarString(hCVVersioncvar, PLUGIN_VERSION);
+	SetConVarString(hCVVersion, PLUGIN_VERSION);
 	AutoExecConfig(true, "Give_Bots_Weapons");
 	GameData hGameConfig = LoadGameConfigFile("give.bots.stuff");
 
@@ -109,7 +113,7 @@ public void OnPluginStart()
 	}
 
 	delete hGameConfig;
-	delete hCVVersioncvar;
+	delete hCVVersion;
 	delete hCVEnabled;
 	delete hCVDelay;
 	delete hCVDroppedWeaponRemoval;
@@ -142,6 +146,11 @@ public void OnEnabledChanged(ConVar convar, const char[] oldValue, const char[] 
 		UnhookEvent("post_inventory_application", player_inv);
 		UnhookEvent("teamplay_round_stalemate", EventSuddenDeath, EventHookMode_PostNoCopy);
 		UnhookEvent("teamplay_round_start", EventRoundReset, EventHookMode_PostNoCopy);
+
+		for (int i = 0; i < (MAXPLAYERS+1); i++)
+		{
+			delete g_hTouched[i];
+		}
 	}
 }
 
@@ -181,6 +190,11 @@ public void OnMapStart()
 	g_iResourceEntity = GetPlayerResourceEntity();
 	HookEntities("func_regenerate");
 	HookEntities("func_respawnroom");
+
+	for (int i = 0; i < (MAXPLAYERS+1); i++)
+	{
+		delete g_hTouched[i];
+	}
 }
 
 public void OnClientDisconnect(int client)
@@ -429,12 +443,11 @@ public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 	int client = GetClientOfUserId(userid);
 	delete g_hTouched[client];
 
-	if (!IsPlayerHere(client))
+	if (!IsPlayerHere(client) || !IsPlayerAllowed(client))
 	{
 		return;
 	}
 
-	int team = GetClientTeam(client);
 	float cvdelay = g_fCVDelay;
 
 	if (g_bCVRandomizeDelay && (cvdelay > 0.1))
@@ -442,27 +455,7 @@ public void player_inv(Handle event, const char[] ename, bool dontBroadcast)
 		cvdelay = GetRandomUFloat(0.1, cvdelay);
 	}
 
-	switch (g_iCVTeam)
-	{
-		case 1:
-		{
-			g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
-		}
-		case 2:
-		{
-			if (team == 2)
-			{
-				g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
-			}
-		}
-		case 3:
-		{
-			if (team == 3)
-			{
-				g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
-			}
-		}
-	}
+	g_hTouched[client] = CreateTimer(cvdelay, Timer_GiveWeapons, userid, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action Timer_GiveWeapons(Handle timer, any data)
@@ -470,29 +463,9 @@ public Action Timer_GiveWeapons(Handle timer, any data)
 	int client = GetClientOfUserId(data);
 	g_hTouched[client] = null;
 
-	if (!g_bCVEnabled || g_bSuddenDeathMode || (g_bMVM && !g_bCVMVMSupported) || !IsPlayerHere(client))
+	if (!g_bCVEnabled || g_bSuddenDeathMode || (g_bMVM && !g_bCVMVMSupported) || !IsPlayerHere(client) || !IsPlayerAllowed(client))
 	{
 		return Plugin_Stop;
-	}
-
-	int team = GetClientTeam(client);
-
-	switch (g_iCVTeam)
-	{
-		case 2:
-		{
-			if (team != 2)
-			{
-				return Plugin_Stop;
-			}
-		}
-		case 3:
-		{
-			if (team != 3)
-			{
-				return Plugin_Stop;
-			}
-		}
 	}
 
 	TFClassType class = TF2_GetPlayerClass(client);
@@ -1978,14 +1951,7 @@ bool CreateWeapon(int client, char[] classname, int slot, int itemindex, int lev
 		}
 		case 998: // Vaccinator
 		{
-			int resistType = GetRandomUInt(0,4);
-
-			if (resistType > 2)
-			{
-				resistType = 0;
-			}
-
-			SetEntData(weapon, FindSendPropInfo(entclass, "m_nChargeResistType"), resistType);
+			SetEntData(weapon, FindSendPropInfo(entclass, "m_nChargeResistType"), GetRandomUInt(0,2));
 		}
 		case 1178: // The Dragon's Fury
 		{
@@ -2052,6 +2018,11 @@ int GetPlayerMaxHp(int client)
 bool IsPlayerHere(int client)
 {
 	return (client && IsClientInGame(client) && IsFakeClient(client) && !IsClientReplay(client) && !IsClientSourceTV(client));
+}
+
+bool IsPlayerAllowed(int client)
+{
+	return ((g_iCVTeam == BOTH_TEAMS) || (GetClientTeam(client) == g_iCVTeam) ? true : false);
 }
 
 int GetRandomUInt(int min, int max)
