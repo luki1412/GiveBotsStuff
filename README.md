@@ -6,3 +6,4 @@ Current plugins:
 - GiveBotsCosmetics - https://forums.alliedmods.net/showthread.php?t=288153 - gives bots cosmetics
 - GiveBotsNames - https://forums.alliedmods.net/showthread.php?t=350781 - gives bots custom names
 - GiveBotsTeleporterUpgrades - https://forums.alliedmods.net/showthread.php?t=351458 - gives bots teleporter upgrades
+- GiveBotsVoiceCommands - https://forums.alliedmods.net/showthread.php?t=352121 - gives bots voice commands
